@@ -2,8 +2,9 @@
 
 When using this code, please cite the following paper:
 
-Paper: B.P. van Oers, I. Baysal Erez, M. van Keulen, "Sparse GAIN: Imputation Methods to Handle Missing Values with
-Sparse Initialization", IDEAL conference, 2025.
+Paper: van Oers, B.P., Baysal Erez, I., van Keulen, M. (2026). Sparse GAIN: Imputation Methods to Handle Missing Values
+with Sparse Initialization. In: Martínez, L., et al. Intelligent Data Engineering and Automated Learning – IDEAL 2025.
+IDEAL 2025. Lecture Notes in Computer Science, vol 16238. Springer, Cham. https://doi.org/10.1007/978-3-032-10486-1_22
 
 Authors: Brian Patrick van Oers, Işıl Baysal Erez, Maurice van Keulen
 
@@ -13,7 +14,7 @@ https://github.com/BrianPvanOers/S-GAIN/releases/tag/v0.1.0-alpha) *
 Contact: b.p.vanoers@student.utwente.nl
 
 \* Alternatively, for easy replication, one may load the IDEAL2025 settings to run the experiments associated with this
-paper, with the current tools for analysis.
+paper, with the current tools.
 
 ---
 
