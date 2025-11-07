@@ -239,3 +239,11 @@ additional settings not already explained in prior sections:
   corresponding graphs.
 - **main.py:** The main file from which the experiments are run.
 - **run_experiments.py:** This file enables running multiple experiments consecutively.
+
+---
+
+## Help support my research
+
+If you like this work, and you would like to support its development, please consider donating:
+
+**paypal.me/BrianPvanOers**
