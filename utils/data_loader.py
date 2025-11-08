@@ -4,8 +4,8 @@
 """
 
 import numpy as np
-
-from utils.utils import binary_sampler
+from PIL import Image
+from utils.utils import binary_sampler, mar_sampler, mnar_sampler, upscale
 from keras.datasets import mnist, fashion_mnist, cifar10
 
 
@@ -24,7 +24,7 @@ def data_loader(dataset, miss_rate, miss_modality, seed=None):
     - miss_data_x: the data with missing values
     - data_mask: the indicator matrix for missing elements
     """
-
+    data_points_per_pixel = 1
     # Load the data
     if dataset in ['health', 'letter', 'spam']:
         file_name = f'datasets/{dataset}.csv'
@@ -37,19 +37,35 @@ def data_loader(dataset, miss_rate, miss_modality, seed=None):
         data_x = np.reshape(np.asarray(data_x), [60000, 28 * 28]).astype(float)
     elif dataset == 'cifar10':
         (data_x, _), _ = cifar10.load_data()
+        data_points_per_pixel = 3
         data_x = np.reshape(np.asarray(data_x), [50000, 32 * 32 * 3]).astype(float)
+    elif dataset == 'test':
+        data_x =  Image.open(f'datasets/{dataset}.jpg')
+        data_x = data_x.convert('L')
+        data_x = np.array(data_x).astype(float)
+        print(data_x[:5])
+        if (len(data_x.shape) == 3):
+            data_points_per_pixel = data_x.shape[2]
+            data_x = data_x.reshape((data_x.shape[0], data_x.shape[1] * data_x.shape[2]))
+
+
+        
     else:  # This should not happen
         print(f'Invalid dataset: "{dataset}". Exiting the program.')
         return None
 
-    # Introduce missing elements in the data
-    if miss_modality == 'MCAR':
-        no, dim = data_x.shape
-        data_mask = binary_sampler(1 - miss_rate, no, dim, seed)
-        miss_data_x = data_x.copy()
-        miss_data_x[data_mask == 0] = np.nan
-    else:  # This should not happen
-        print(f'Invalid miss modality: "{miss_modality}". Exiting the program.')
-        return None
-
+    # Introduce missing elements in the data'
+    no, dim = data_x.shape[:2]
+    match miss_modality:
+        case 'MCAR':
+            data_mask = binary_sampler(1 - miss_rate, no, dim, seed)
+        case 'MAR':
+            data_mask = mar_sampler(miss_rate, no, dim, data_x, seed)
+        case 'MNAR':
+            data_mask = mnar_sampler(miss_rate,no,dim,data_x,seed)
+        case 'AI_UPSCALER':
+            data_mask = upscale(data_x, miss_rate, data_points_per_pixel)
+    print(data_mask[:5])
+    miss_data_x = data_x.copy()
+    miss_data_x[data_mask == 0] = np.nan
     return data_x, miss_data_x, data_mask

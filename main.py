@@ -16,7 +16,7 @@
 
 import argparse
 import os
-
+from PIL import Image
 import numpy as np
 
 from models.s_gain_TFv1_FP32 import s_gain
@@ -36,6 +36,7 @@ def main(args):
     :param args:
     - dataset: the dataset to use
     - miss_rate: the probability of missing elements in the data
+    - upscale_multiplier: the multiplier for the image size for upscaling
     - miss_modality: the modality of missing data (MCAR, MAR, MNAR)
     - seed: the seed used to introduce missing elements in the data (optional)
     - batch_size: the number of samples in mini-batch
@@ -77,7 +78,7 @@ def main(args):
     no_log = args.no_log
     no_graph = args.no_graphs
     no_model = args.no_model
-    no_save = args.no_imputation
+    no_save = False #args.no_save
     no_system_information = args.no_system_information
 
     # Standardization
@@ -103,7 +104,7 @@ def main(args):
     if seed is None: seed = np.random.randint(2 ** 31)
 
     # Exit program if a modality is not implemented yet Todo: implement the modalities
-    not_implemented = ['MAR', 'MNAR', 'ERK', 'erdos_renyi_kernel', 'ERKRW', 'erdos_renyi_kernel_random_weight', 'SNIP',
+    not_implemented = ['ERK', 'erdos_renyi_kernel', 'ERKRW', 'erdos_renyi_kernel_random_weight', 'SNIP',
                        'GraSP', 'RSensitivity']
     if miss_modality in not_implemented:
         print(f'Miss modality {miss_modality} is not implemented. Exiting program...')
@@ -172,6 +173,15 @@ def main(args):
     )
 
     if verbose: print(f'Finished.')
+    # print(imputed_data_x[:5])
+    # result = Image.fromarray((imputed_data_x * 255).astype(int))
+    # result.show()
+    # print(imputed_data_x[:2])
+    # print(img[:2])
+    #picca = np.reshape(picca, (picca.shape[0], picca.shape[1] / 1, 1))
+    # img = Image.fromarray(imputed_data_x.astype(np.uint8), mode='L')
+    # img.save(f"{folder}/{experiment}.png")
+    
 
     return imputed_data_x, rmse
 
@@ -182,7 +192,7 @@ if __name__ == '__main__':
     parser.add_argument(
         'dataset',
         help='which dataset to use',
-        choices=['health', 'letter', 'spam', 'mnist', 'fashion_mnist', 'cifar10'],
+        choices=['health', 'letter', 'spam', 'mnist', 'fashion_mnist', 'cifar10', 'test'],
         type=str)
     parser.add_argument(
         '-mr', '--miss_rate',
@@ -191,8 +201,8 @@ if __name__ == '__main__':
         type=float)
     parser.add_argument(
         '-mm', '--miss_modality',
-        help='the modality of missing data (MCAR, MAR, MNAR)',
-        choices=['MCAR', 'MAR', 'MNAR'],
+        help='the modality of missing data (MCAR, MAR, MNAR, AI_upscaler)',
+        choices=['MCAR', 'MAR', 'MNAR','AI_upscaler'],
         default='MCAR',
         type=str)
     parser.add_argument(
