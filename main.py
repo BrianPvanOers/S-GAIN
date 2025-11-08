@@ -36,7 +36,7 @@ def main(args):
     :param args:
     - dataset: the dataset to use
     - miss_rate: the probability of missing elements in the data
-    - miss_modality: the modality of missing data (MCAR, MAR, MNAR)
+    - miss_modality: the modality of missing data (MCAR, MAR, MNAR, SQUARE)
     - seed: the seed used to introduce missing elements in the data (optional)
     - batch_size: the number of samples in mini-batch
     - hint_rate: the hint probability
@@ -80,6 +80,11 @@ def main(args):
     no_save = args.no_imputation
     no_system_information = args.no_system_information
 
+    # Remove previous system information file
+    sys_info_filepath = "temp/sys_info.json"
+    if os.path.exists(sys_info_filepath):
+        os.remove(sys_info_filepath)
+
     # Standardization
     def sparsity_modality(sparsity, modality):
         if sparsity == 0 or modality == 'dense':
@@ -103,7 +108,7 @@ def main(args):
     if seed is None: seed = np.random.randint(2 ** 31)
 
     # Exit program if a modality is not implemented yet Todo: implement the modalities
-    not_implemented = ['MAR', 'MNAR', 'ERK', 'erdos_renyi_kernel', 'ERKRW', 'erdos_renyi_kernel_random_weight', 'SNIP',
+    not_implemented = ['ERK', 'erdos_renyi_kernel', 'ERKRW', 'erdos_renyi_kernel_random_weight', 'SNIP',
                        'GraSP', 'RSensitivity']
     if miss_modality in not_implemented:
         print(f'Miss modality {miss_modality} is not implemented. Exiting program...')
@@ -125,7 +130,14 @@ def main(args):
         print('Loading data...')
 
     # Load the data with missing elements
-    data_x, miss_data_x, data_mask = data_loader(dataset, miss_rate, miss_modality, seed)
+    data = data_loader(dataset, miss_rate, miss_modality, seed)
+
+    # Stop if data loading fails
+    if data is None:
+        return None
+
+    # Unpack loaded data
+    data_x, miss_data_x, data_mask = data
 
     # Initialize monitor
     monitor = None if no_log and no_model else Monitor(data_x, data_mask, experiment=experiment, verbose=verbose)
@@ -191,8 +203,8 @@ if __name__ == '__main__':
         type=float)
     parser.add_argument(
         '-mm', '--miss_modality',
-        help='the modality of missing data (MCAR, MAR, MNAR)',
-        choices=['MCAR', 'MAR', 'MNAR'],
+        help='the modality of missing data (MCAR, MAR, MNAR, SQUARE)',
+        choices=['MCAR', 'MAR', 'MNAR', 'SQUARE'],
         default='MCAR',
         type=str)
     parser.add_argument(

@@ -67,7 +67,70 @@ def binary_sampler(p, rows, cols, seed=None):
     return binary_random_matrix
 
 
-# -- Other functions --------------------------------------------------------------------------------------------------
+def uniform_sampler(low, high, rows, cols, seed=None):
+    """Sample uniform random variables.
+
+    :param low: the low limit
+    :param high: the high limit
+    :param rows: the number of rows
+    :param cols: the number of columns
+
+    :return:
+    - uniform_random_matrix: a uniform random matrix
+    """
+
+    if seed is not None: 
+        np.random.seed(seed=seed)
+
+    uniform_random_matrix = np.random.uniform(low, high, size=(rows, cols))
+    return uniform_random_matrix
+
+def missing_square_masks(miss_rate, rows, cols, seed):
+    """For a list of flattened images, create a list of masks that remove a
+    square from each image.
+
+    The function assumes that each flattened image was originally square.
+
+    :param miss_rate: the ratio between the size of the missing square and the
+    size of the image
+    :param rows: the number of images
+    :param cols: the number of pixels in each (flattened) image
+    :param seed: the seed
+
+    :return:
+    - mask_arr: an array of the size of the original dataset with values of 0 or 1 depending on if the values should be included    
+    """
+    seed = np.random.seed(seed)
+    mask = []
+
+    # Loop over flattened images
+    for _ in range(rows):
+        # Size of the image is the square root of the number of pixels
+        # We want to unflatten the image
+        image_size = int(cols**0.5)
+        temp_mask = np.ones((image_size, image_size))
+
+        square_size = int((miss_rate**0.5) * image_size)
+        
+        # The max_pos is how far the square can be from the top left corner
+        max_pos = image_size - square_size
+
+        # Left and upper edges of the square
+        square_left_x = np.random.randint(0, max_pos)
+        square_upper_y = np.random.randint(0, max_pos)
+
+        # Right and lower edges of the square
+        square_right_x = square_left_x + square_size
+        square_lower_y = square_upper_y + square_size
+
+        # Set values in the square to 0
+        temp_mask[square_left_x:square_right_x, square_upper_y:square_lower_y] = 0
+
+        # Flatten the mask to match original dataset
+        mask.append(temp_mask.flatten())
+
+    mask_arr = np.array(mask)
+    return mask_arr
 
 def sample_batch_index(total, batch_size):
     """Sample index of the mini-batch.
