@@ -91,7 +91,7 @@ iterations = [10000]
 # The number of training iterations.
 # Default: [10000]
 
-clipping = False
+clipping = True
 # Enable clipping for D_prob.
 # Default: True
 
@@ -262,6 +262,10 @@ enable_FLOPs_monitor = False
 
 enable_loss_monitor = True
 # Enable monitoring of the losses (cross entropy and MSE).
+# Default: True
+
+enable_clipping_monitor = True
+# Enable monitoring of the clipping.
 # Default: True
 
 

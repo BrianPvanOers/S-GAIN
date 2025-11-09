@@ -267,6 +267,10 @@ enable_loss_monitor = True
 # Enable monitoring of the losses (cross entropy and MSE).
 # Default: True
 
+enable_clipping_monitor = True
+# Enable monitoring of the clipping.
+# Default: True
+
 
 # -- Run settings -----------------------------------------------------------------------------------------------------
 

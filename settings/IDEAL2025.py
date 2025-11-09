@@ -293,6 +293,11 @@ enable_loss_monitor = True
 # * This setting was not implemented when this paper was written.
 # Default: True
 
+enable_clipping_monitor = False
+# Enable monitoring of the clipping.
+# * This setting was not implemented when this paper was written.
+# Default: True
+
 
 # -- Run settings -----------------------------------------------------------------------------------------------------
 
