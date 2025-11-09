@@ -68,6 +68,7 @@ def main(args):
     hint_rate = args.hint_rate
     alpha = args.alpha
     iterations = args.iterations
+    # NOTE the modalities are lower cased from the CLI args
     generator_sparsity = args.generator_sparsity
     generator_modality = args.generator_modality.lower()
     discriminator_sparsity = args.discriminator_sparsity
@@ -86,6 +87,8 @@ def main(args):
             return 0, 'dense'
         elif modality == 'random':
             return sparsity, modality
+        elif modality == 'magnitude':
+            return sparsity, modality
         elif modality in ('er', 'erdos_renyi'):
             return sparsity, 'ER'
         elif modality in ('erk', 'erdos_renyi_kernel'):
@@ -95,7 +98,9 @@ def main(args):
         elif modality in ('erkrw', 'erdos_renyi_kernel_random_weight'):
             return sparsity, 'ERKRW'
         else:
-            return None
+            # HACK NOTE this used to return None here, but we need to allow sparsities to fall through for passing in
+            # DST parameters.
+            return sparsity, modality
 
     generator_sparsity, generator_modality = sparsity_modality(generator_sparsity, generator_modality)
     discriminator_sparsity, discriminator_modality = sparsity_modality(discriminator_sparsity, discriminator_modality)
@@ -103,8 +108,8 @@ def main(args):
     if seed is None: seed = np.random.randint(2 ** 31)
 
     # Exit program if a modality is not implemented yet Todo: implement the modalities
-    not_implemented = ['MAR', 'MNAR', 'ERK', 'erdos_renyi_kernel', 'ERKRW', 'erdos_renyi_kernel_random_weight', 'SNIP',
-                       'GraSP', 'RSensitivity']
+    not_implemented = ['MAR', 'MNAR', 'ERK', 'erdos_renyi_kernel', 'ERKRW', 'erdos_renyi_kernel_random_weight',
+                       'RSensitivity']
     if miss_modality in not_implemented:
         print(f'Miss modality {miss_modality} is not implemented. Exiting program...')
         return None
@@ -156,8 +161,22 @@ def main(args):
     # Save imputation
     if not no_save and 'nan' not in filepath_imputed_data:
         if verbose: print('Saving imputation...')
+        print(filepath_imputed_data)
         save_imputation(filepath_imputed_data, imputed_data_x)
 
+    with open('temp/run_data', 'w') as f:
+        f.write(f'{experiment}\n{filepath_imputed_data}\n{filepath_log}\n{filepath_graphs}\n{filepath_model}')
+
+    if not no_log:
+        if no_graph:
+            os.system(f'python log_and_graphs.py -ng'
+                      f'{" -nsi" if no_system_information else ""}'
+                      f'{" -v" if verbose else ""}')
+        else:
+            os.system(f'python log_and_graphs.py'
+                      f'{" -nsi" if no_system_information else ""}'
+                      f'{" -v" if verbose else ""}')
+            
     # Save (trained) model
     if not no_model and 'nan' not in filepath_model:
         if verbose: print('Saving (trained) model...')
@@ -228,9 +247,11 @@ if __name__ == '__main__':
     parser.add_argument(
         '-gm', '--generator_modality',
         help='the initialization and pruning and regrowth strategy of the generator',
-        choices=['dense', 'random', 'ER', 'erdos_renyi', 'ERK', 'erdos_renyi_kernel', 'ERRW',
-                 'erdos_renyi_random_weight', 'ERKRW', 'erdos_renyi_kernel_random_weight', 'SNIP', 'GraSP',
-                 'RSensitivity'],
+        # NOTE No choices as we parse params from the modality now; any modality would be "valid" as a CLI arg
+        # choices=['dense', 'ER', 'erdos_renyi', 'ERK', 'erdos_renyi_kernel', 'ERRW',
+        #          'erdos_renyi_random_weight', 'ERKRW', 'erdos_renyi_kernel_random_weight', 'SNIP', 'GraSP',
+        #          'RSensitivity'
+        #          ],
         default='dense',
         type=str)
     parser.add_argument(
@@ -241,9 +262,10 @@ if __name__ == '__main__':
     parser.add_argument(
         '-dm', '--discriminator_modality',
         help='the initialization and pruning and regrowth strategy of the discriminator',
-        choices=['dense', 'random', 'ER', 'erdos_renyi', 'ERK', 'erdos_renyi_kernel', 'ERRW',
-                 'erdos_renyi_random_weight', 'ERKRW', 'erdos_renyi_kernel_random_weight', 'SNIP', 'GraSP',
-                 'RSensitivity'],
+        # NOTE No choices as we parse params from the modality now; any modality would be "valid" as a CLI arg
+        # choices=['dense', 'random', 'ER', 'erdos_renyi', 'ERK', 'erdos_renyi_kernel', 'ERRW',
+        #          'erdos_renyi_random_weight', 'ERKRW', 'erdos_renyi_kernel_random_weight', 'SNIP', 'GraSP',
+        #          'RSensitivity'],
         default='dense',
         type=str)
     parser.add_argument(

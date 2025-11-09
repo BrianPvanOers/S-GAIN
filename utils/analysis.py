@@ -158,7 +158,7 @@ def prepare_plot(nGsm, nDsm, ax_width=6.4, ax_height=4.8, share_axis=False):
 
         if not info_ax or not legend_ax:
             # Plot parameters
-            width, height, left, right, top, bottom, wspace, hspace = get_sizing(3, nrows, ax_width, ax_height)
+            width, height, left, right, top, bottom, wspace, hspace, _ = get_sizing(3, nrows, ax_width, ax_height)
             fig, axs = plt.subplots(nrows, 3, figsize=(width, height))
             plt.subplots_adjust(left=left, right=right, top=top, bottom=bottom, wspace=wspace, hspace=hspace)
 
@@ -275,8 +275,9 @@ def prepare_data_params(modality, x=None):
     - primary_color: the primary color
     - secondary_color: the secondary color
     """
-
+    
     # Todo expand for different settings (not only modality)
+    # NOTE change color for rmse graph here
     if modality == 'dense':
         primary_color = 'black'
         secondary_color = 'dimgray'
@@ -294,6 +295,26 @@ def prepare_data_params(modality, x=None):
         if x is not None: x = [f'   {x}   ' for x in x]
         primary_color = 'tab:purple'
         secondary_color = 'mediumorchid'
+    elif modality == 'magnitude':
+        if x is not None: x = [f'    {x}    ' for x in x]
+        primary_color = 'tab:blue'
+        secondary_color = 'lightblue'
+    elif modality == 'random_regrow':
+        if x is not None: x = [f'    {x}    ' for x in x]
+        primary_color = 'tab:cyan'
+        secondary_color = 'darkblue'
+    elif modality == 'magnitude_regrow':
+        if x is not None: x = [f'    {x}    ' for x in x]
+        primary_color = 'tab:purple'
+        secondary_color = 'violet'
+    elif modality.lower() == 'grasp': # HACK NOTE lowered modality case here for comparison graph color
+        if x is not None: x = [f'    {x}    ' for x in x]
+        primary_color = 'tab:red'
+        secondary_color = 'crimson'
+    elif modality.lower() == 'snip':
+        if x is not None: x = [f'    {x}    ' for x in x]
+        primary_color = 'tab:olive'
+        secondary_color = 'brown'
     else:
         if x is not None: x = [f'    {x}    ' for x in x]
         primary_color = 'tab:green'

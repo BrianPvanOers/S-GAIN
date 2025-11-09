@@ -27,31 +27,34 @@ Start monitors:
 (6) start_sparsity_monitor: open the sparsity log files
 (7) start_flops_monitor: open the FLOPs log files
 (8) start_loss_monitor: open the loss log files
-(9) start_all_monitors: start all the monitors
+(9) start_clipping_monitor: open the clipping log files
+(10) start_all_monitors: start all the monitors
 
 Log metrics:
-(10) log_rmse: log the RMSE
-(11) log_imputation_time: log the imputation time
-(12) log_memory_usage: log the memory usage
-(13) log_energy_consumption: log the energy consumption
-(14) log_sparsity: log the sparsity
-(15) log_flops: log the FLOPs
-(16) log_loss: log the loss
-(17) log_all_monitors: log the all monitors
+(11) log_rmse: log the RMSE
+(12) log_imputation_time: log the imputation time
+(13) log_memory_usage: log the memory usage
+(14) log_energy_consumption: log the energy consumption
+(15) log_sparsity: log the sparsity
+(16) log_flops: log the FLOPs
+(17) log_loss: log the loss
+(18) log_clipping: log the clipping
+(19) log_all_monitors: log the all monitors
 
 Stop monitors:
-(18) stop_rmse_monitor: close the RMSE log file
-(19) stop_imputation_time_monitor: close the imputation time log file
-(20) stop_memory_usage_monitor: close the memory usage log file
-(21) stop_energy_consumption_monitor: close the energy consumption log file
-(22) stop_sparsity_monitor: close the sparsity log files
-(23) stop_flops_monitor: close the FLOPs log files
-(24) stop_loss_monitor: close the loss log files
-(25) stop_all_monitors: close all the monitors
+(20) stop_rmse_monitor: close the RMSE log file
+(21) stop_imputation_time_monitor: close the imputation time log file
+(22) stop_memory_usage_monitor: close the memory usage log file
+(23) stop_energy_consumption_monitor: close the energy consumption log file
+(24) stop_sparsity_monitor: close the sparsity log files
+(25) stop_flops_monitor: close the FLOPs log files
+(26) stop_loss_monitor: close the loss log files
+(27) stop_clipping_monitor: close the clipping log files
+(28) stop_all_monitors: close all the monitors
 
 Store trained model:
-(26) set_model: set the (trained) model, so it can be saved later
-(27) save_model: save the (trained) model to a json file
+(29) set_model: set the (trained) model, so it can be saved later
+(30) save_model: save the (trained) model to a json file
 """
 
 import json
@@ -71,8 +74,8 @@ class Monitor:
 
     def __init__(self, data_x, data_mask, enable_rmse_monitor=True, enable_imputation_time_monitor=True,
                  enable_memory_usage_monitor=False, enable_energy_consumption_monitor=False,
-                 enable_sparsity_monitor=True, enable_FLOPs_monitor=False, enable_loss_monitor=True, experiment=None,
-                 verbose=False):
+                 enable_sparsity_monitor=True, enable_FLOPs_monitor=False, enable_loss_monitor=True,
+                 enable_clipping_monitor=True, experiment=None, verbose=False):
         """Initialize the monitor.
 
         :param data_x: the original data (without missing values)
@@ -84,6 +87,7 @@ class Monitor:
         :param enable_sparsity_monitor: enable the sparsity monitor
         :param enable_FLOPs_monitor: enable the FLOPs monitor
         :param enable_loss_monitor: enable the loss monitor
+        :param enable_clipping_monitor: enable the clipping monitor
         :param experiment: the name of the experiment (optional)
         :param verbose: enable verbose output to console
         """
@@ -106,6 +110,7 @@ class Monitor:
             self.f_sparsity_D_W1, self.f_sparsity_D_W2, self.f_sparsity_D_W3 = [enable_sparsity_monitor] * 8
         self.f_FLOPs_G, self.f_FLOPs_D = [enable_FLOPs_monitor] * 2
         self.f_loss_G, self.f_loss_D, self.f_loss_MSE = [enable_loss_monitor] * 3
+        self.f_clip_G_d_prob, self.f_clip_D_d_prob = [enable_clipping_monitor] * 2
 
         # Model
         self.G_W1, self.G_W2, self.G_W3, self.G_b1, self.G_b2, self.G_b3 = [None] * 6
@@ -124,7 +129,7 @@ class Monitor:
     def start_rmse_monitor(self):
         """Open the RMSE log file and start monitoring.
 
-        :return: True
+        :return: Whether the monitor is active
         """
 
         if self.f_RMSE:
@@ -137,7 +142,7 @@ class Monitor:
     def start_imputation_time_monitor(self):
         """Open the imputation time log file and start monitoring.
 
-        :return: True
+        :return: Whether the monitor is active
         """
 
         if self.f_imputation_time:
@@ -151,7 +156,7 @@ class Monitor:
     def start_memory_usage_monitor(self):
         """Open the memory usage log file and start monitoring.
 
-        :return: True
+        :return: Whether the monitor is active
         """
 
         if self.f_memory_usage:
@@ -164,7 +169,7 @@ class Monitor:
     def start_energy_consumption_monitor(self):
         """Open the energy consumption log file and start monitoring.
 
-        :return: True
+        :return: Whether the monitor is active
         """
 
         if self.f_energy_consumption:
@@ -198,7 +203,7 @@ class Monitor:
     def start_flops_monitor(self):
         """Open the FLOPs log files and start monitoring.
 
-        :return: True
+        :return: Whether the monitor is active
         """
 
         if self.f_FLOPs_G:
@@ -212,7 +217,7 @@ class Monitor:
     def start_loss_monitor(self):
         """Open the loss log files and start monitoring.
 
-        :return: True
+        :return: Whether the monitor is active
         """
 
         if self.f_loss_G:
@@ -224,10 +229,24 @@ class Monitor:
 
         return False
 
+    def start_clip_monitor(self):
+        """Open the clipping log files and start monitoring.
+
+        :return: Whether the monitor is active
+        """
+
+        if self.f_clip_G_d_prob:
+            self.f_clip_G_d_prob = open('temp/exp_bins/clip_G_d_prob.bin', 'ab')
+            self.f_clip_D_d_prob = open('temp/exp_bins/clip_D_d_prob.bin', 'ab')
+            if self.verbose: print('Monitoring clipping...')
+            return True
+
+        return False
+
     def start_all_monitors(self):
         """Start all the monitors.
 
-        :return: True
+        :return: Whether the monitor is active
         """
 
         if self.verbose: print('Starting monitors...')
@@ -238,6 +257,7 @@ class Monitor:
         self.start_sparsity_monitor()
         self.start_flops_monitor()
         self.start_loss_monitor()
+        self.start_clip_monitor()
 
         return True
 
@@ -359,7 +379,23 @@ class Monitor:
 
         return None
 
-    def log_all(self, imputed_data, G_sparsities, D_sparsities, loss_G, loss_D, loss_MSE):
+    def log_clip(self, G_d_prob=None, D_d_prob=None):
+        """Log the clipping values as fractions of the clipped parameters.
+
+        :param G_d_prob: fraction (0-1) of discriminator feature probabilities clipped for generator
+        :param D_d_prob: fraction (0-1) of discriminator feature probabilities clipped for discriminator
+
+        :return: True
+        """
+
+        if self.f_clip_G_d_prob:
+            if G_d_prob is not None: self.f_clip_G_d_prob.write(struct.pack('f', G_d_prob))
+            if D_d_prob is not None: self.f_clip_D_d_prob.write(struct.pack('f', D_d_prob))
+            return True
+
+        return None
+
+    def log_all(self, imputed_data, G_sparsities, D_sparsities, loss_G, loss_D, loss_MSE, G_d_prob=None, D_d_prob=None):
         """Log the all monitors.
 
         :param imputed_data: The imputed data
@@ -380,6 +416,7 @@ class Monitor:
         self.log_sparsity(G_sparsities, D_sparsities)
         self.log_flops()
         self.log_loss(loss_G, loss_D, loss_MSE)
+        self.log_clip(G_d_prob, D_d_prob)
 
         return True
 
@@ -480,6 +517,19 @@ class Monitor:
 
         return False
 
+    def stop_clip_monitor(self):
+        """Close the clipping log files and stop monitoring.
+
+        :return: False
+        """
+
+        if self.f_clip_G_d_prob:
+            self.f_clip_G_d_prob.close()
+            self.f_clip_D_d_prob.close()
+            if self.verbose: print('Stopped monitoring clipping.')
+
+        return False
+
     def stop_all_monitors(self):
         """Stop all the monitors.
 
@@ -493,6 +543,7 @@ class Monitor:
         self.stop_sparsity_monitor()
         self.stop_flops_monitor()
         self.stop_loss_monitor()
+        self.stop_clip_monitor()
 
         if self.verbose: print('Stopped monitors.')
         return False

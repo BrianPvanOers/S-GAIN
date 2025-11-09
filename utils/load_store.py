@@ -314,9 +314,9 @@ def get_experiments(datasets, miss_rates, miss_modalities, seeds, batch_sizes, h
             for modality in modalities if modality == 'dense'
         ]
         sparsity_modality += [
-            (sparsity, 'random')
+            (sparsity, modality)
             for sparsity in sparsities if sparsity > 0
-            for modality in modalities if modality == 'random'
+            for modality in modalities if modality not in ('dense', 'ER', 'ERK', 'ERRW', 'ERKRW')
         ]
         sparsity_modality += [
             (sparsity, 'ER')
