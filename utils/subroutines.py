@@ -16,6 +16,7 @@
 
 Subroutines:
 (1) settings_subroutine: show settings, load settings, store current settings or delete settings
+(2) prepare_datasets: prepare the datasets
 (3) run_experiments: run all the experiments
 (4) analyze: compile the metrics and plot the graphs
 """
@@ -32,6 +33,7 @@ from time import perf_counter
 import pandas as pd
 
 from utils.analysis import extract_log_info, compile_metrics, plot_rmse, plot_success_rate, plot_imputation_time
+from utils.data_loader import data_loader
 from utils.load_store import parse_files, system_information, get_experiments_from_config, get_completed_experiments, \
     read_bin
 
@@ -129,25 +131,78 @@ def settings(parser, operation, filename, information):
         parser.print_help()
 
 
-def run_experiments(config):
+def prepare_datasets(config, dataset, miss_rate, miss_modality, seed):
+    """Prepare the datasets.
+
+    :param config: the configuration file
+    :param dataset: the dataset to prepare
+    :param miss_rate: the miss rate
+    :param miss_modality: the miss modality
+    :param seed: the seed
+    """
+
+    if config.verbose: print('Preparing dataset(s)...')
+
+    # Parameters
+    if not dataset: dataset = config.dataset
+    if not miss_rate: miss_rate = config.miss_rate
+    if not miss_modality: miss_modality = config.miss_modality
+
+    # Set seed
+    if seed is None:  # No seed specified, use config
+        seed = config.seed
+    elif not seed:  # Random seed
+        seed = None
+
+    # Turn parameters into lists
+    if type(dataset) is not list: dataset = [dataset]
+    if type(miss_rate) is not list: miss_rate = [miss_rate]
+    if type(miss_modality) is not list: miss_modality = [miss_modality]
+    if type(seed) is not list: seed = [seed]
+
+    # Call data_loader
+    dataprep = [(d, mr, mm, s) for d in dataset for mr in miss_rate for mm in miss_modality for s in seed]
+    for x in dataprep: data_loader(x[0], x[1], x[2], x[3], store_prepared_dataset=True, verbose=config.verbose)
+
+    if config.verbose: print('Finished.')
+
+
+def run_experiments(config, show):
     """Run all the experiments.
 
     :param config: the configuration file
+    :param show: whether to show the experiments to run
     """
 
     experiments = get_experiments_from_config(config)
-
-    # Report initial progress
-    i = 0
-    total = experiments['n_runs'].sum()
-    start_time = perf_counter()
-    print(f'\nProgress: 0% completed 0:00:00\n')
 
     # Parameters
     output_folder = None
     analysis_folder = None
     perform_analysis = None
     completed_experiments = None
+
+    # Remove completed experiments
+    # for folder in experiments['output_folder'].unique():
+    #     completed_experiments = get_completed_experiments(folder)
+    #     completed_experiments.replace(to_replace='None', value=None, inplace=True)
+    #     # Todo
+    experiments.reset_index(drop=True, inplace=True)
+
+    # Show experiments and options
+    if show:
+        print(f'{experiments}\n\n'
+            f'# Options\n'
+            f'verbose = {config.verbose}\n'
+            f'no_system_information = {config.no_system_information}\n'
+            f'auto_shutdown = {config.auto_shutdown}\n')
+        input("Press Enter to continue...")
+
+    # Report initial progress
+    i = 0
+    total = experiments['n_runs'].sum()
+    start_time = perf_counter()
+    print(f'\nProgress: 0% completed 0:00:00\n')
 
     # Run experiments and analysis
     if not isdir('temp'): makedirs('temp')
@@ -156,7 +211,7 @@ def run_experiments(config):
         # Perform analysis and remove completed experiments
         if output_folder and analysis_folder:
             if output_folder != experiment['output_folder']:
-                if perform_analysis: analyze(output_folder, analysis_folder)
+                if perform_analysis: analyze(config, output_folder, analysis_folder)
 
                 # Update parameters
                 output_folder = experiment['output_folder']
@@ -174,7 +229,7 @@ def run_experiments(config):
         if not (experiment['no_imputation'] and experiment['no_log'] and experiment['no_graphs']
                 and experiment['no_model']):
 
-            # Calculate how often the experiment should run
+            # Calculate how often the experiment should run Todo before loop
             if experiment['ignore_existing_files']:
                 n_runs = experiment['n_runs']
                 max_failed_experiments = experiment['max_failed_experiments']
@@ -203,7 +258,7 @@ def run_experiments(config):
 
             # Run experiment
             while n_runs > 0 and max_failed_experiments > 0:
-                os.system(f'python main.py'
+                os.system(f'python runner.py'
                           f'{" --verbose" if config.verbose else ""}'
                           f'{" --no_system_information" if config.no_system_information else ""}')
 
@@ -223,7 +278,7 @@ def run_experiments(config):
                 print(f'\nProgress: {percent_complete}% completed {timedelta(seconds=elapsed_time)}{estimated}\n')
 
     # Analysis
-    if perform_analysis and total > 0: analyze(output_folder, analysis_folder)
+    if perform_analysis and total > 0: analyze(config, output_folder, analysis_folder)
 
     # Auto shutdown
     if config.auto_shutdown and total > 0:

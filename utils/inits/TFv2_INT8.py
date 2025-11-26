@@ -16,23 +16,32 @@
 
 Todo: This version uses TensorFlow 2.x and INT8 precision.
 
-(1) normal_xavier_init: Normal Xavier initialization
-(2) Todo: uniform_xavier_init: Uniform Xavier initialization
-(3) random_init: Random initialization
-(4) Todo: non-uniform random: different sparsity per layer
-(5) Todo: erdos_renyi_init: Erdos Renyi initialization
-(6) Todo: erdos_renyi_kernel_init: Erdos Renyi Kernel initialization
-(7) Todo: get_random_weights: helper function for getting random weights
-(8) Todo: erdos_renyi_random_weights_init: Erdos Renyi with Random Weights initialization
-(9) Todo: erdos_renyi_kernel_random_weights_init: Erdos Renyi Kernel with Random Weights initialization
-(10) Todo: snip_init: SNIP initialization
-(11) Todo: grasp_init: GraSP initialization
-(12) Todo: rsensitivity_init: RSensitivity initialization
+Helper functions:
+(1) Todo: get_random_weights: helper function for getting random weights
+
+Initializations:
+(2) normal_xavier_init: Normal Xavier initialization
+(3) Todo: uniform_xavier_init: Uniform Xavier initialization
+(4) random_init: Random initialization
+(5) Todo: non-uniform random: different sparsity per layer
+(6) Todo: erdos_renyi_init: Erdos Renyi initialization
+(7) Todo: erdos_renyi_kernel_init: Erdos Renyi Kernel initialization
+(8) Todo: erdos_renyi_normal_random_init: Erdos Renyi with Normal Random initialization
+(9) Todo: erdos_renyi_uniform_random_init: Erdos Renyi with Uniform Random initialization
+(10) Todo: erdos_renyi_kernel_normal_random_init: Erdos Renyi Kernel with Normal Random initialization
+(11) Todo: erdos_renyi_kernel_uniform_random_init: Erdos Renyi Kernel with Uniform Random initialization
+(12) Todo: snip_init: SNIP initialization
+(13) Todo: grasp_init: GraSP initialization
+(14) Todo: rsensitivity_init: RSensitivity initialization
 """
 
 import numpy as np
 import tensorflow as tf
 
+
+# -- Helper functions -------------------------------------------------------------------------------------------------
+
+# -- Initializations --------------------------------------------------------------------------------------------------
 
 def normal_xavier_init(size):
     """Normal Xavier initialization.
