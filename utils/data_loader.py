@@ -4,6 +4,7 @@
 """
 
 import numpy as np
+
 from utils.utils import binary_sampler
 from keras.datasets import mnist, fashion_mnist, cifar10
 
