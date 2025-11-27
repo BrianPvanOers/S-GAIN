@@ -28,30 +28,64 @@ import tensorflow.compat.v1 as tf
 
 from tqdm import tqdm
 
-from utils.inits_TFv1_FP32 import normal_xavier_init, random_init, erdos_renyi_init, erdos_renyi_random_weights_init
+from utils.inits.TFv1_FP32 import normal_xavier_init, random_init, erdos_renyi_init, erdos_renyi_normal_random_init
 from utils.metrics import get_sparsity
 from utils.utils import binary_sampler, uniform_sampler, sample_batch_index, normalization, renormalization, rounding
 
 tf.disable_v2_behavior()
 
 
-def s_gain(miss_data_x, batch_size=128, hint_rate=0.9, alpha=100, iterations=10000,
-           generator_sparsity=0, generator_modality='dense', discriminator_sparsity=0, discriminator_modality='dense',
-           verbose=False, no_model=True, monitor=None):
+# -- S-GAIN -----------------------------------------------------------------------------------------------------------
+
+def s_gain(miss_data_x, batch_size=128, hint_rate=0.9, alpha=100, iterations=10000, generator_initialization='dense',
+           generator_sparsity=0, generator_pruner=None, generator_prune_rate=0, generator_prune_period=0,
+           generator_regrower=None, generator_regrow_rate=0, generator_regrow_period=0, generator_enable_clipping=False,
+           generator_strategy=None, generator_use_strategy=False, discriminator_initialization='dense',
+           discriminator_sparsity=0, discriminator_pruner=None, discriminator_prune_rate=0,
+           discriminator_prune_period=0, discriminator_regrower=None, discriminator_regrow_rate=0,
+           discriminator_regrow_period=0, discriminator_enable_clipping=False, discriminator_strategy=None,
+           discriminator_use_strategy=False, no_model=True, monitor=None, verbose=False):
     """Impute the missing values in miss_data_x.
 
     :param miss_data_x: the data with missing values
-    :param batch_size: the number of samples in mini-batch
+    :param batch_size: the number of samples in the mini-batch
     :param hint_rate: the hint probability
     :param alpha: the hyperparameter
-    :param iterations: the number of training iterations (epochs)
+    :param iterations: the number of training iterations
+    :param generator_initialization: the initialization strategy of the generator
     :param generator_sparsity: the probability of sparsity in the generator
-    :param generator_modality: the initialization and pruning and regrowth strategy of the generator
+    :param generator_pruner: the pruning strategy of the generator
+    :param generator_prune_rate: the probability of pruning a non-zero weight in the discriminator, based on the number
+    of non-zero weights at initialization
+    :param generator_prune_period: the number of iterations before pruning the discriminator after initialization or
+    previous pruning
+    :param generator_regrower: the regrowing strategy of the generator
+    :param generator_regrow_rate: the probability of regrowing a zero weight in the generator, based on the number of
+    non-zero weights at initialization
+    :param generator_regrow_period: the regrowing strategy of the generator
+    :param generator_enable_clipping: enable clipping for certain strategies in the generator TODO
+    :param generator_strategy: the training strategy of the generator
+    :param generator_use_strategy: use a complete training strategy for the generator, instead of separate
+    initialization, pruning and regrowing strategies
+    :param discriminator_initialization: the initialization and pruning and regrowth strategy of the discriminator
     :param discriminator_sparsity: the probability of sparsity in the discriminator
-    :param discriminator_modality: the initialization and pruning and regrowth strategy of the discriminator
-    :param verbose: enable verbose output to console
+    :param discriminator_pruner: the pruning strategy of the discriminator
+    :param discriminator_prune_rate: the probability of pruning a non-zero weight in the discriminator, based on the
+    number of non-zero weights at initialization
+    :param discriminator_prune_period: the number of iterations before pruning the discriminator after initialization or
+    previous pruning
+    :param discriminator_regrower: the regrowing strategy of the discriminator
+    :param discriminator_regrow_rate: the probability of regrowing a zero weight in the discriminator, based on the
+    number of non-zero weights at initialization
+    :param discriminator_regrow_period: the number of iterations before regrowing the discriminator after initialization
+    or previous regrowing
+    :param discriminator_enable_clipping: enable clipping for certain strategies in the discriminator TODO
+    :param discriminator_strategy: the training strategy of the discriminator
+    :param discriminator_use_strategy: use a complete training strategy for the discriminator, instead of separate
+    initialization, pruning and regrowing strategies
     :param no_model: don't save the trained model
     :param monitor: the monitor object used for the measurements
+    :param verbose: enable verbose output to console
 
     :return:
     - imputed_data_x: the imputed data
@@ -93,41 +127,41 @@ def s_gain(miss_data_x, batch_size=128, hint_rate=0.9, alpha=100, iterations=100
     H = tf.placeholder(tf.float32, shape=[None, dim])  # Hint vector
 
     # Generator variables: Data + Mask as inputs (Random noise is in missing components)
-    if generator_modality in ('dense', 'random'):
+    if generator_initialization in ('dense', 'random'):
         G_W1 = normal_xavier_init([dim * 2, h_dim])
         G_W2 = normal_xavier_init([h_dim, h_dim])
         G_W3 = normal_xavier_init([h_dim, dim])
 
-        if generator_modality == 'random':
+        if generator_initialization == 'random':
             G_W1, G_W2, G_W3 = random_init([G_W1, G_W2, G_W3], generator_sparsity)
 
-    elif generator_modality in ('ER', 'ERK', 'ERRW', 'ERKRW'):
+    elif generator_initialization in ('ER', 'ERK', 'ERRW', 'ERKRW'):
         G_Ws = {
             'G_W1': np.zeros([dim * 2, h_dim]),
             'G_W2': np.zeros([h_dim, h_dim]),
             'G_W3': np.zeros([h_dim, dim])
         }
 
-        if generator_modality == 'ER':
+        if generator_initialization == 'ER':
             G_W1, G_W2, G_W3 = erdos_renyi_init(G_Ws, generator_sparsity).values()
-        elif generator_modality == 'ERK':
+        elif generator_initialization == 'ERK':
             return None
-        elif generator_modality == 'ERRW':
-            G_W1, G_W2, G_W3 = erdos_renyi_random_weights_init(G_Ws, generator_sparsity).values()
+        elif generator_initialization == 'ER':
+            G_W1, G_W2, G_W3 = erdos_renyi_normal_random_init(G_Ws, generator_sparsity).values()
         else:  # ERKRW
             return None
 
-    elif generator_modality == 'SNIP':
+    elif generator_initialization == 'SNIP':
         return None
 
-    elif generator_modality == 'GraSP':
+    elif generator_initialization == 'GraSP':
         return None
 
-    elif generator_modality == 'RSensitivity':
+    elif generator_initialization == 'RSensitivity':
         return None
 
     else:  # This should not happen
-        print(f'Invalid generator modality: {generator_modality}. Exiting the program.')
+        print(f'Invalid generator modality: {generator_initialization}. Exiting the program.')
         return None
 
     G_W1 = tf.Variable(G_W1)
@@ -142,41 +176,41 @@ def s_gain(miss_data_x, batch_size=128, hint_rate=0.9, alpha=100, iterations=100
     theta_G = [G_W1, G_W2, G_W3, G_b1, G_b2, G_b3]
 
     # Discriminator variables: Data + Hint as inputs
-    if discriminator_modality in ('dense', 'random'):
+    if discriminator_initialization in ('dense', 'random'):
         D_W1 = normal_xavier_init([dim * 2, h_dim])
         D_W2 = normal_xavier_init([h_dim, h_dim])
         D_W3 = normal_xavier_init([h_dim, dim])
 
-        if discriminator_modality == 'random':
+        if discriminator_initialization == 'random':
             D_W1, D_W2, D_W3 = random_init([D_W1, D_W2, D_W3], discriminator_sparsity)
 
-    elif discriminator_modality in ('ER', 'ERK', 'ERRW', 'ERKRW'):
+    elif discriminator_initialization in ('ER', 'ERK', 'ERRW', 'ERKRW'):
         D_Ws = {
             'D_W1': np.zeros([dim * 2, h_dim]),
             'D_W2': np.zeros([h_dim, h_dim]),
             'D_W3': np.zeros([h_dim, dim])
         }
 
-        if discriminator_modality == 'ER':
+        if discriminator_initialization == 'ER':
             D_W1, D_W2, D_W3 = erdos_renyi_init(D_Ws, discriminator_sparsity).values()
-        elif discriminator_modality == 'ERK':
+        elif discriminator_initialization == 'ERK':
             return None
-        elif discriminator_modality == 'ERRW':
-            D_W1, D_W2, D_W3 = erdos_renyi_random_weights_init(D_Ws, discriminator_sparsity).values()
+        elif discriminator_initialization == 'ERRW':
+            D_W1, D_W2, D_W3 = erdos_renyi_normal_random_init(D_Ws, discriminator_sparsity).values()
         else:  # ERKRW
             return None
 
-    elif discriminator_modality == 'SNIP':
+    elif discriminator_initialization == 'SNIP':
         return None
 
-    elif discriminator_modality == 'GraSP':
+    elif discriminator_initialization == 'GraSP':
         return None
 
-    elif discriminator_modality == 'RSensitivity':
+    elif discriminator_initialization == 'RSensitivity':
         return None
 
     else:  # This should not happen
-        print(f'Invalid discriminator modality: {discriminator_modality}. Exiting the program.')
+        print(f'Invalid discriminator modality: {discriminator_initialization}. Exiting the program.')
         return None
 
     D_W1 = tf.Variable(D_W1)
@@ -304,11 +338,6 @@ def s_gain(miss_data_x, batch_size=128, hint_rate=0.9, alpha=100, iterations=100
     # Rounding
     if verbose: print('Rounding data...')
     imputed_data_x = rounding(imputed_data_x, miss_data_x)
-
-    # Only impute missing data
-    data_mask = np.zeros(miss_data_x.shape, dtype=int)
-    data_mask[np.isnan(miss_data_x)] = 1
-    imputed_data_x = np.where(data_mask, imputed_data_x, miss_data_x)
 
     # Reshaping
     if reshaped:

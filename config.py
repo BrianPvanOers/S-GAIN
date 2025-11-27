@@ -37,7 +37,7 @@ Settings:
 
 # -- Data preparation settings ----------------------------------------------------------------------------------------
 
-dataset = ['health', 'fashion_mnist']
+dataset = ['spam', 'letter', 'health', 'fashion_mnist']
 # The dataset to use.
 # Options: ['spam', 'letter', 'health', 'mnist', 'fashion_mnist', 'cifar10']
 # Default: ['spam', 'letter']
@@ -47,7 +47,7 @@ miss_rate = [0.2]
 # Float (0, 1)
 # Default: [0.2]
 
-miss_modality = ['MCAR']
+miss_modality = ['MCAR', 'MAR1', 'MNAR1', 'MAR3', 'MNAR3', 'upscaler', 'square']
 # The modality of missing data.
 # Options: ['MCAR', 'MAR', 'MNAR', 'upscaler', 'square']
 # Default: ['MCAR']
@@ -58,7 +58,7 @@ seed = [0]
 # Int [0, 2^31)
 # Default: [0]
 
-prepared_datasets_folder = 'datasets/prepared'
+prepared_datasets_folder = 'datasets/prepared_MD'
 # The folder to store the prepared datasets in.
 # Default: 'datasets/prepared'
 
@@ -98,12 +98,12 @@ clipping = False
 
 # -- Generator settings -----------------------------------------------------------------------------------------------
 
-generator_initialization = ['dense', 'random']
+generator_initialization = ['dense']
 # the initialization strategy of the generator.
 # Options: ['dense', 'random', 'ER', 'ERNR'] Todo add what your students added
 # Default: ['dense']
 
-generator_sparsity = [0, 0.6, 0.8, 0.9, 0.95, 0.99]
+generator_sparsity = [0]
 # The probability of sparsity in the generator.
 # Float [0, 1)
 # Default: [0]
@@ -154,12 +154,12 @@ generator_use_strategy = False
 
 # -- Discriminator settings -------------------------------------------------------------------------------------------
 
-discriminator_initialization = ['dense', 'random']
+discriminator_initialization = ['dense']
 # The initialization strategy of the discriminator.
 # Options: ['dense', 'random', 'ER', 'ERNR'] Todo add what your students added
 # Default: ['dense']
 
-discriminator_sparsity = [0, 0.2, 0.4, 0.6, 0.8]
+discriminator_sparsity = [0]
 # The probability of sparsity in the discriminator.
 # Float [0, 1)
 # Default: [0]
@@ -211,7 +211,7 @@ discriminator_use_strategy = False
 
 # -- Output settings --------------------------------------------------------------------------------------------------
 
-output_folder = 'output'
+output_folder = 'output_MD'
 # The folder to save experiments to.
 # Default: 'output'
 
@@ -267,7 +267,7 @@ enable_loss_monitor = True
 
 # -- Run settings -----------------------------------------------------------------------------------------------------
 
-n_runs = 10
+n_runs = 5
 # The number of times each experiment should be performed.
 # Default: 10
 
@@ -276,7 +276,7 @@ retry_failed_experiments = True
 # or reaches max_failed_experiments.
 # Default: True
 
-max_failed_experiments = 40
+max_failed_experiments = 15
 # The maximum number of times the experiment can fail.
 # * Used to prevent infinite loops.
 # Default: 40 (success_rate < 20%)
@@ -290,7 +290,7 @@ ignore_existing_files = False
 
 # -- Analysis settings ------------------------------------------------------------------------------------------------
 
-analysis_folder = 'analysis'
+analysis_folder = 'analysis_MD'
 # The folder to save the analysis to.
 # Default: 'analysis'
 
@@ -326,10 +326,50 @@ plot_energy_consumption = False
 # -- Inclusions -------------------------------------------------------------------------------------------------------
 
 inclusions = [{
-    'n_runs': 1,
-    'enable_FLOPs_monitor': True,
-    'output_folder': 'output_FLOPs',
-    'perform_analysis': False
+    # Todo different generator settings DST
+    'miss_modality': ['MCAR'],
+    'generator_initialization': ['dense'],
+    'generator_sparsity': [0],
+    'generator_pruner': [None],
+    'generator_prune_rate': [0],
+    'generator_prune_period': [0],
+    'generator_regrower': [None],
+    'generator_regrow_rate': [0],
+    'generator_regrow_period': [0],
+    'discriminator_initialization': ['dense'],
+    'discriminator_sparsity': [0],
+    'discriminator_pruner': [0],
+    'discriminator_prune_rate': [0],
+    'discriminator_prune_period': [0],
+    'discriminator_regrower': [0],
+    'discriminator_regrow_rate': [0],
+    'discriminator_regrow_period': [0],
+    'enable_clipping': False,
+    'prepared_datasets_folder': 'datasets/prepared_DST_no_clipping',
+    'output_folder': 'output_DST_no_clipping',
+    'analysis_folder': 'analysis_DST_no_clipping'
+}, {
+    'miss_modality': ['MCAR'],
+    'generator_initialization': ['dense'],
+    'generator_sparsity': [0],
+    'generator_pruner': [None],
+    'generator_prune_rate': [0],
+    'generator_prune_period': [0],
+    'generator_regrower': [None],
+    'generator_regrow_rate': [0],
+    'generator_regrow_period': [0],
+    'discriminator_initialization': ['dense'],
+    'discriminator_sparsity': [0],
+    'discriminator_pruner': [0],
+    'discriminator_prune_rate': [0],
+    'discriminator_prune_period': [0],
+    'discriminator_regrower': [0],
+    'discriminator_regrow_rate': [0],
+    'discriminator_regrow_period': [0],
+    'enable_clipping': True,
+    'prepared_datasets_folder': 'datasets/prepared_DST_clipping',
+    'output_folder': 'output_DST_clipping',
+    'analysis_folder': 'analysis_DST_clipping'
 }]
 # An inclusion is a dictionary of settings. It overwrites the base
 # config and adds the newly specified experiments. The config reloads
@@ -346,7 +386,13 @@ inclusions = [{
 
 # -- Exclusions -------------------------------------------------------------------------------------------------------
 
-exclusions = []
+exclusions = [{
+    'dataset': ['health', 'spam', 'letter'],
+    'miss_modality': ['upscaler', 'square']
+}, {
+    'dataset': ['fashion_mnist'],
+    'miss_modality': ['MAR1', 'MNAR1', 'MAR3', 'MNAR3']
+}]
 # An exclusion is a dictionary of settings. It removes experiments
 # with this combination of settings. It overwrites the inclusions.
 # Each exclusion is independent of any previous exclusion.

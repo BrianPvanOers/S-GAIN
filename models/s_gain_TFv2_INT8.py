@@ -34,7 +34,7 @@ from tqdm import tqdm
 from keras import Sequential, Input
 from keras.src.layers import Dense
 
-from utils.inits_TFv2_INT8 import normal_xavier_init
+from utils.inits.TFv2_INT8 import normal_xavier_init
 from utils.utils import binary_sampler, uniform_sampler, sample_batch_index, normalization, renormalization, rounding
 
 
@@ -299,11 +299,6 @@ def s_gain(miss_data_x, batch_size=128, hint_rate=0.9, alpha=100, iterations=100
     # Rounding
     if verbose: print('Rounding data...')
     imputed_data_x = rounding(imputed_data_x, miss_data_x)
-
-    # Only impute missing data
-    data_mask = np.zeros(miss_data_x.shape, dtype=int)
-    data_mask[np.isnan(miss_data_x)] = 1
-    imputed_data_x = np.where(data_mask, imputed_data_x, miss_data_x)
 
     # Reshaping
     if reshaped:

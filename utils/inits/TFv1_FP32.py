@@ -16,23 +16,60 @@
 
 This version uses TensorFlow 1.x and FP32 precision.
 
-(1) normal_xavier_init: Normal Xavier initialization
-(2) Todo: uniform_xavier_init: Uniform Xavier initialization
-(3) random_init: Random initialization
-(4) Todo: non-uniform random: different sparsity per layer
-(5) erdos_renyi_init: Erdos Renyi initialization
-(6) Todo: erdos_renyi_kernel_init: Erdos Renyi Kernel initialization
-(7) get_random_weights: helper function for getting random weights
-(8) erdos_renyi_random_weights_init: Erdos Renyi with Random Weights initialization
-(9) Todo: erdos_renyi_kernel_random_weights_init: Erdos Renyi Kernel with Random Weights initialization
-(10) Todo: snip_init: SNIP initialization
-(11) Todo: grasp_init: GraSP initialization
-(12) Todo: rsensitivity_init: RSensitivity initialization
+Helper functions:
+(1) get_random_weights: helper function for getting random weights
+
+Initializations:
+(2) normal_xavier_init: Normal Xavier initialization
+(3) Todo: uniform_xavier_init: Uniform Xavier initialization
+(4) random_init: Random initialization
+(5) Todo: non-uniform random: different sparsity per layer
+(6) erdos_renyi_init: Erdos Renyi initialization
+(7) Todo: erdos_renyi_kernel_init: Erdos Renyi Kernel initialization
+(8) erdos_renyi_normal_random_init: Erdos Renyi with Normal Random initialization
+(9) Todo: erdos_renyi_uniform_random_init: Erdos Renyi with Uniform Random initialization
+(10) Todo: erdos_renyi_kernel_normal_random_init: Erdos Renyi Kernel with Normal Random initialization
+(11) Todo: erdos_renyi_kernel_uniform_random_init: Erdos Renyi Kernel with Uniform Random initialization
+(12) Todo: snip_init: SNIP initialization
+(13) Todo: grasp_init: GraSP initialization
+(14) Todo: rsensitivity_init: RSensitivity initialization
 """
 
 import numpy as np
 import tensorflow as tf
 
+
+# -- Helper functions -------------------------------------------------------------------------------------------------
+
+def get_random_weights(tensors, distribution='normal'):
+    """Helper function for getting random weights.
+
+    :param tensors: the Erdos-Renyi (Kernel) initialized tensors to use as masks
+    :param distribution: the type of distribution to use (normal, uniform)
+
+    :return:
+     - tensors: the Erdos-Renyi (Kernel) initialized tensors with random weights
+    """
+
+    i = 0
+    for key, mask in tensors.items():
+        # Convert Dimension to int to avoid problems
+        size = [int(x) for x in mask.shape]
+
+        if distribution == 'normal':
+            tensor = normal_xavier_init(size)
+            tensors[key] = tensor * mask
+        elif distribution == 'uniform':
+            pass  # todo
+        else:  # This should not happen
+            raise NotImplementedError  # todo
+
+        i += 1
+
+    return tensors
+
+
+# -- Initializations --------------------------------------------------------------------------------------------------
 
 def normal_xavier_init(size):
     """Normal Xavier initialization.
@@ -163,29 +200,8 @@ def erdos_renyi_kernel_init(tensors, sparsity, erk_power_scale=1.0):
     return tensors
 
 
-def get_random_weights(tensors):
-    """Helper function for getting random weights.
-
-    :param tensors: the Erdos-Renyi (Kernel) initialized tensors to use as masks
-
-    :return:
-     - tensors: the Erdos-Renyi (Kernel) initialized tensors with random weights
-    """
-
-    i = 0
-    for key, mask in tensors.items():
-        # Convert Dimension to int to avoid problems
-        size = [int(x) for x in mask.shape]
-
-        tensor = normal_xavier_init(size)
-        tensors[key] = tensor * mask
-        i += 1
-
-    return tensors
-
-
-def erdos_renyi_random_weights_init(tensors, sparsity, erk_power_scale=1.0):
-    """Erdos Renyi with Random Weights initialization.
+def erdos_renyi_normal_random_init(tensors, sparsity, erk_power_scale=1.0):
+    """Erdos Renyi with Normal Random initialization.
 
     :param tensors: the tensors to apply sparsity on
     :param sparsity: the level of sparsity [0,1)
@@ -196,12 +212,12 @@ def erdos_renyi_random_weights_init(tensors, sparsity, erk_power_scale=1.0):
     """
 
     tensors = erdos_renyi_init(tensors, sparsity, erk_power_scale)
-    tensors = get_random_weights(tensors)
+    tensors = get_random_weights(tensors, 'normal')
     return tensors
 
 
-def erdos_renyi_kernel_random_weights_init(tensors, sparsity, erk_power_scale=1.0):
-    """Erdos Renyi Kernel with Random Weights initialization.
+def erdos_renyi_kernel_normal_random_init(tensors, sparsity, erk_power_scale=1.0):
+    """Erdos Renyi Kernel with Normal Random initialization.
 
     :param tensors: the tensors to apply sparsity on
     :param sparsity: the level of sparsity [0,1)
@@ -212,5 +228,5 @@ def erdos_renyi_kernel_random_weights_init(tensors, sparsity, erk_power_scale=1.
     """
 
     tensors = erdos_renyi_kernel_init(tensors, sparsity, erk_power_scale)
-    tensors = get_random_weights(tensors)
+    tensors = get_random_weights(tensors, 'normal')
     return tensors

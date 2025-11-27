@@ -19,17 +19,28 @@ This version is currently being developed and seeks to implement full monitoring
 - GPU temperatures (to check for throttling).
 - GPU VRAM usage.
 
-## Pre-release v0.1.3-alpha (TBD)
+Some other changes include:
+
+- Improved dataloader, now returns features and labels.
+
+## Pre-release v0.1.3-alpha (11-10-2025)
 
 This version saw major a major overhaul of the testing framework and major improvements to the analysis. This version
-marks the end of my role as project supervisor for the Data Science and Artificial Intelligence elective at the
-University of Twente.
+marks the end of my role as project supervisor for Missing Data and Dynamic Sparse Training in the Data Science and
+Artificial Intelligence elective at the University of Twente. It also unifies the work of my students with my own work,
+and includes the work of my own Research Project.
 
 - Switched to a config based project structure.
+- Implemented new miss modalities: MAR, MNAR, upscaler and square.
+- Can now store prepared datasets for analysis or to speed up slow miss modalities.
+- Implemented pruners, regrowers, and complete training strategies.
 - Implemented imputation time analysis.
 - Immediately terminate failed experiments to speed up testing.
-- Implemented auto shutdown for run_experiments.py.
-- Improvements to the analysis.
+- Implemented auto shutdown for s_gain.py run.
+- Improvements to the analysis. TODO more specificity.
+- retry_failed_experiments now reruns the individual experiment until completion or reaching the failure instead of
+  running other experiments first.
+- Can now set max_failed_experiments to prevent infinite loops.
 - Other improvements to the project structure.
 
 ## Pre-release v0.1.2-alpha (11-09-2025)

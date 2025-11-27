@@ -30,8 +30,10 @@ def main(args):
     subroutine = args.subroutine
     if subroutine == 'settings':
         subroutines.settings(settings, args.operation, args.filename, args.information)
+    elif subroutine == 'prepare':
+        subroutines.prepare_datasets(config, args.dataset, args.miss_rate, args.miss_modality, args.seed)
     elif subroutine == 'run':
-        subroutines.run_experiments(config)
+        subroutines.run_experiments(config, args.show)
     elif subroutine == 'analyze':
         subroutines.analyze(config, args.input, args.output)
     else:
@@ -47,7 +49,7 @@ if __name__ == '__main__':
         help='change settings, run or analyze experiments'
     )
 
-    # Settings
+    # Settings Todo overwrite config
     settings = subparsers.add_parser(
         'settings',
         help='show, load, store or delete settings'
@@ -70,15 +72,75 @@ if __name__ == '__main__':
         action='store_true'
     )
 
+    # Prepare datasets
+    prepare = subparsers.add_parser(
+        'prepare',
+        help='prepare the datasets specified in config.py'
+    )
+    prepare.add_argument(
+        'dataset',
+        help='the dataset to prepare (overwrites config)',
+        nargs='?',
+        type=str
+    )
+    prepare.add_argument(
+        '--datasets', '-ds',
+        help='the datasets to prepare (overwrites config)',
+        nargs='+',
+        type=str
+    )
+    prepare.add_argument(
+        'miss_rate',
+        help='the miss rate to prepare the datasets with (overwrites config)',
+        nargs='?',
+        type=float
+    )
+    prepare.add_argument(
+        '--miss_rate', '--miss_rates', '-mr',
+        help='the miss rate to prepare the datasets with (overwrites config)',
+        nargs='+',
+        type=float
+    )
+    prepare.add_argument(
+        'miss_modality',
+        help='the miss modality to prepare the datasets with (overwrites config)',
+        choices=['MCAR', 'MAR', 'MNAR', 'AI_upscaler', 'square'],
+        nargs='?',
+        type=str
+    )
+    prepare.add_argument(
+        '--miss_modality', '--miss_modalities', '-mm',
+        help='the miss modality to prepare the datasets with (overwrites config)',
+        choices=['MCAR', 'MAR', 'MNAR', 'AI_upscaler', 'square'],
+        nargs='+',
+        type=str
+    )
+    prepare.add_argument(
+        'seed',
+        help='the seeds to prepare the datasets with (overwrites config)',
+        nargs='?',
+        type=int
+    )
+    prepare.add_argument(
+        '--seed', '--seeds', '-s',
+        help='the seeds to prepare the datasets with (overwrites config). random seed if left blank',
+        default=[],
+        nargs='*',
+        type=int
+    )
 
-    # Run experiments
+    # Run experiments Todo overwrite config
     run = subparsers.add_parser(
         'run',
         help='run the experiments specified in config.py'
     )
-    # Todo overwrite config
+    run.add_argument(
+        '--show',
+        help='show the experiments to run',
+        action='store_true'
+    )
 
-    # Analysis
+    # Analysis Todo overwrite config
     analysis = subparsers.add_parser(
         'analyze',
         help='analyze the completed experiments'
@@ -105,7 +167,6 @@ if __name__ == '__main__':
         help='the folder to save the analysis to (use default: analysis, if not specified)',
         type=str
     )
-    # Todo overwrite config
 
     # Call main
     args = parser.parse_args()

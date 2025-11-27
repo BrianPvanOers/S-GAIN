@@ -90,7 +90,7 @@ alpha = [100]
 # The hyperparameter.
 # Default: [100]
 
-iterations = [10000]
+iterations = [1000]
 # The number of training iterations.
 # Default: [10000]
 

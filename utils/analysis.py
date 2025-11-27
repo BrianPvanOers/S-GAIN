@@ -17,7 +17,7 @@
 Todo properly name the graphs, legends, labels, etc
 
 Helper functions:
-(1) get_Gsm_Dsm: helper function to get the unique Generator and Discriminator settings (sparsity and modality)
+(1) get_Gsm_Dsm: helper function to get the unique Generator and Discriminator settings (initialization and sparsity)
 (2) prepare_plot: helper function to prepare plots
 (3) prepare_text: helper function to prepare the text for printing
 (4) get_experiments_from_info: helper function to group the experiments by dataset, miss_rate, miss_modality and seed
@@ -51,32 +51,32 @@ from utils.load_store import parse_experiment
 exp = 'Experiments'
 d_mr_mm_s = ['dataset', 'miss_rate', 'miss_modality', 'seed']
 bs_hr_a_i = ['batch_size', 'hint_rate', 'alpha', 'iterations']
+gi = ['generator_initialization']
 gs = ['generator_sparsity']
-gm = ['generator_modality']
+di = ['discriminator_initialization']
 ds = ['discriminator_sparsity']
-dm = ['discriminator_modality']
 
 
 # -- Helper functions -------------------------------------------------------------------------------------------------
 
 def get_Gsm_Dsm(d_mr_mm_s_group):
-    """Get the unique Generator and Discriminator settings (sparsity and modality).
+    """Get the unique Generator and Discriminator settings (initialization and sparsity).
 
     :param d_mr_mm_s_group: the experiments grouped by dataset, miss_rate, miss_modality and seed
 
     :return:
-    - Gsm: the unique Generator settings (sparsity and modality)
-    - Dsm: the unique Discriminator settings (sparsity and modality)
-    - nGsm: the number of unique Generator settings (sparsity and modality)
-    - nDsm: the number of unique Discriminator settings (sparsity and modality)
+    - Gsm: the unique Generator settings (initialization and sparsity)
+    - Dsm: the unique Discriminator settings (initialization and sparsity)
+    - nGsm: the number of unique Generator settings (initialization and sparsity)
+    - nDsm: the number of unique Discriminator settings (initialization and sparsity)
     """
 
     if type(d_mr_mm_s_group) == DataFrame:
-        Gsm = d_mr_mm_s_group.drop_duplicates(subset=['generator_sparsity', 'generator_modality'])
-        Gsm = Gsm[['generator_sparsity', 'generator_modality']].values.tolist()
+        Gsm = d_mr_mm_s_group.drop_duplicates(subset=gi + gs)
+        Gsm = Gsm[gi + gs].values.tolist()
 
-        Dsm = d_mr_mm_s_group.drop_duplicates(subset=['discriminator_sparsity', 'discriminator_modality'])
-        Dsm = Dsm[['discriminator_sparsity', 'discriminator_modality']].values.tolist()
+        Dsm = d_mr_mm_s_group.drop_duplicates(subset=di + ds)
+        Dsm = Dsm[di + ds].values.tolist()
 
     else:  # type(d_mr_mm_s_group) == dict
         Gsm = list({(key[4], key[5]) for key in d_mr_mm_s_group.keys()})
@@ -95,8 +95,8 @@ def prepare_plot(nGsm, nDsm, ax_width=6.4, ax_height=4.8, share_axis=False):
     (2) Turn off the unused subplots
     (3) Determine the locations of the experiment, system information and legend.
 
-    :param nGsm: the number of unique Generator settings (sparsity and modality)
-    :param nDsm: the number of unique Discriminator settings (sparsity and modality)
+    :param nGsm: the number of unique Generator settings (initialization and sparsity)
+    :param nDsm: the number of unique Discriminator settings (initialization and sparsity)
     :param ax_width: the width of the subplots
     :param ax_height: the height of the subplots
     :param share_axis: plot the experiment, system information and legend to the same subplot
@@ -228,69 +228,69 @@ def get_experiments_from_info(experiments_info):
     return experiments
 
 
-def prepare_subplot_params(ax, M, sparsity, modality):
+def prepare_subplot_params(ax, M, initialization, sparsity):
     """Prepare the subplot:
     (1) Set the title.
     (2) Get the subtitle.
-    (3) Get the correct sparsity and modality (Generator or Discriminator).
+    (3) Get the correct initialization and sparsity (Generator or Discriminator).
 
     :param ax: the subplot to write to
     :param M: the model this belongs to (Generator or Discriminator)
+    :param initialization: the initialization of the other model (optional)
     :param sparsity: the sparsity of the other model (optional)
-    :param modality: the modality of the other model (optional)
 
     :return:
     - subtitle: The label of the x-axis
-    - m: the modality to group by
+    - init: the initialization to group by
     - sparsity: the sparsities to plot on the x-axis
     """
 
     if sparsity != 'all': sparsity = f'{int(sparsity * 100)}%'
     if M in ('G', 'generator'):
-        ax.title.set_text(f'Discriminator: {sparsity} {modality}')
+        ax.title.set_text(f'Discriminator: {initialization} {sparsity}')
         subtitle = 'Generator'
-        m = ['generator_modality']
+        init = ['generator_initialization']
         sparsity = 'generator_sparsity'
     else:  # ('D', 'discriminator')
-        ax.title.set_text(f'Generator: {sparsity} {modality}')
+        ax.title.set_text(f'Generator: {initialization} {sparsity}')
         subtitle = 'Discriminator'
-        m = ['discriminator_modality']
+        init = ['discriminator_initialization']
         sparsity = 'discriminator_sparsity'
 
-    return subtitle, m, sparsity
+    return subtitle, init, sparsity
 
 
-def prepare_data_params(modality, x=None):
+def prepare_data_params(initialization, x=None):
     """Prepare the data parameters:
-    (1) Recapitalize the modality (after sorting).
+    (1) Recapitalize the initialization (after sorting).
     (2) Distinguish the labels (optional).
     (3) Get the primary and secondary colors.
 
-    :param modality: the modality
+    :param initialization: the initialization
     :param x: the labels
 
     :return:
-    - modality: the (recapitalized) modality
+    - initialization: the (recapitalized) initialization
     - x: the (distinct) labels
     - primary_color: the primary color
     - secondary_color: the secondary color
     """
 
-    # Todo expand for different settings (not only modality)
-    if modality == 'dense':
+    # Todo expand for different settings (not only initialization)
+    if initialization == 'dense':
         primary_color = 'black'
         secondary_color = 'dimgray'
-    elif modality == 'random':
+    elif initialization == 'random':
         if x is not None: x = [f' {x} ' for x in x]
         primary_color = 'tab:orange'
         secondary_color = 'orange'
-    elif modality == 'er':
-        modality = 'ER'
+    elif initialization == 'er':
+        initialization = 'ER'
         if x is not None: x = [f'  {x}  ' for x in x]
         primary_color = 'tab:red'
         secondary_color = 'pink'
-    elif modality == 'errw':
-        modality = 'ERRW'
+    elif initialization == 'errw':
+        initialization = 'ERRW'
         if x is not None: x = [f'   {x}   ' for x in x]
         primary_color = 'tab:purple'
         secondary_color = 'mediumorchid'
@@ -299,7 +299,7 @@ def prepare_data_params(modality, x=None):
         primary_color = 'tab:green'
         secondary_color = 'limegreen'
 
-    return modality, x, primary_color, secondary_color
+    return initialization, x, primary_color, secondary_color
 
 
 def plot_legend(ax, legend_ax, legend_loc, show_bs_hr_a_i, subtitle):
@@ -316,8 +316,8 @@ def plot_legend(ax, legend_ax, legend_loc, show_bs_hr_a_i, subtitle):
         handles, labels = ax.get_legend_handles_labels()
         handles = [h[0] if isinstance(h, container.ErrorbarContainer) else h for h in handles]  # Remove error bars
         lgnd = legend_ax.legend(handles, labels, fontsize=12, loc=legend_loc)
-        lgnd_title = f'Batch size, hint rate, alpha,\niterations and {subtitle.lower()} modality' \
-            if show_bs_hr_a_i else f'{subtitle} modality'
+        lgnd_title = f'Batch size, hint rate, alpha,\niterations and {subtitle.lower()} initialization' \
+            if show_bs_hr_a_i else f'{subtitle} initialization'
         lgnd.set_title(lgnd_title, prop={'size': 13})
 
 
@@ -335,8 +335,9 @@ def extract_log_info(logs, folder='output'):
     exps = {}
     for log in logs:
         # Parse the experiment Todo update with the new params
-        d, mr, mm, s, bs, hr, a, i, gs_, gm_, ds_, dm_, _, _, _ = parse_experiment(log, file=True)
-        experiment = (d, mr, mm, s, bs, hr, a, i, gs_, gm_, ds_, dm_)
+        d, mr, mm, s, bs, hr, a, i, _, gi_, gs_, _, _, _, _, _, _, di_, ds_, _, _, _, _, _, _, _, _, _ \
+            = parse_experiment(log, file=True)
+        experiment = (d, mr, mm, s, bs, hr, a, i, gi_, gs_, di_, ds_)
 
         # Read the log
         with open(f'{folder}/{log}', 'r') as f:
@@ -387,7 +388,7 @@ def compile_metrics(experiments, experiments_info, folder='analysis', verbose=Fa
 
     # Calculate mean, std, successes, total_runs and success_rate
     exps = experiments.drop(['index', 'filetype'], axis='columns')
-    exps = exps.groupby(d_mr_mm_s + bs_hr_a_i + gs + gm + ds + dm, as_index=False).agg(['mean', 'std', 'count', 'size'])
+    exps = exps.groupby(d_mr_mm_s + bs_hr_a_i + gi + gs + di + ds, as_index=False).agg(['mean', 'std', 'count', 'size'])
     exps.columns = exps.columns.get_level_values(0) + exps.columns.get_level_values(1)
     exps.rename(columns={'rmsemean': 'rmse_mean', 'rmsestd': 'rmse_std', 'rmsecount': 'successes',
                          'rmsesize': 'total_runs'}, inplace=True)
@@ -407,12 +408,12 @@ def compile_metrics(experiments, experiments_info, folder='analysis', verbose=Fa
         exps['rmse_improvement'] = exps['rmse_improvement'].round(3)  # Rounding
 
     # Add information from the logs
-    for (d, mr, mm, s, bs, hr, a, i, gs_, gm_, ds_, dm_), values in experiments_info.items():
+    for (d, mr, mm, s, bs, hr, a, i, gi_, gs_, di_, ds_), values in experiments_info.items():
         match = exps.loc[(exps['dataset'] == d) & (exps['miss_rate'] == mr) & (exps['miss_modality'] == mm)
                          & (exps['seed'] == s) & (exps['batch_size'] == bs) & (exps['hint_rate'] == hr)
-                         & (exps['alpha'] == a) & (exps['iterations'] == i) & (exps['generator_sparsity'] == gs_)
-                         & (exps['generator_modality'] == gm_) & (exps['discriminator_sparsity'] == ds_)
-                         & (exps['discriminator_modality'] == dm_)]
+                         & (exps['alpha'] == a) & (exps['iterations'] == i) & (exps['generator_initialization'] == gi_)
+                         & (exps['generator_sparsity'] == gs_) & (exps['discriminator_initialization'] == di_)
+                         & (exps['discriminator_sparsity'] == ds_)]
 
         # Imputation time
         it_total = values['imputation_time']['total']
@@ -452,13 +453,13 @@ def compile_metrics(experiments, experiments_info, folder='analysis', verbose=Fa
                              & (exps['seed'] == s) & (exps['batch_size'] == bs) & (exps['hint_rate'] == hr)
                              & (exps['alpha'] == a) & (exps['iterations'] == i)]
 
-            if isinstance(dense_itit, float): exps.loc[match.index, 'imputation_time_improvement_total'] \
+            exps.loc[match.index, 'imputation_time_improvement_total'] \
                 = 1 / (match['imputation_time_mean_total'] / dense_itit) - 1
-            if isinstance(dense_itip, float): exps.loc[match.index, 'imputation_time_improvement_preparation'] \
+            exps.loc[match.index, 'imputation_time_improvement_preparation'] \
                 = 1 / (match['imputation_time_mean_preparation'] / dense_itip) - 1
-            if isinstance(dense_itis, float): exps.loc[match.index, 'imputation_time_improvement_s_gain'] \
+            exps.loc[match.index, 'imputation_time_improvement_s_gain'] \
                 = 1 / (match['imputation_time_mean_s_gain'] / dense_itis) - 1
-            if isinstance(dense_itif, float): exps.loc[match.index, 'imputation_time_improvement_finalization'] \
+            exps.loc[match.index, 'imputation_time_improvement_finalization'] \
                 = 1 / (match['imputation_time_mean_finalization'] / dense_itif) - 1
 
         # Rounding
@@ -493,26 +494,26 @@ def plot_rmse(experiments, sys_info=None, folder='analysis', verbose=False):
     :param verbose: enable verbose output to console
     """
 
-    def subplot(ax, M_rmse_mean_std, M, legend_ax, sparsity, modality):
+    def subplot(ax, M_rmse_mean_std, M, legend_ax, initialization, sparsity):
         """Create a subplot per model setting.
 
         :param ax: the subplot to write to
         :param M_rmse_mean_std: the rmse mean and std group
         :param M: the model this belongs to (Generator or Discriminator)
         :param legend_ax: the subplot to write the legend to
+        :param initialization: the initialization of the other model (optional)
         :param sparsity: the sparsity of the other model (optional)
-        :param modality: the modality of the other model (optional)
         """
 
         # Subplot parameters
-        subtitle, m, sparsity = prepare_subplot_params(ax, M, sparsity, modality)
+        subtitle, init, sparsity = prepare_subplot_params(ax, M, initialization, sparsity)
 
         # Only show batch_size, hint_rate, alpha and iterations if different settings were tested
         show_bs_hr_a_i = False if M_rmse_mean_std.groupby(bs_hr_a_i).ngroups == 1 else True
 
-        # Group by batch_size, hint_rate, alpha, iterations, modality
-        for (batch_size, hint_rate, alpha, iterations, modality), bs_hr_a_i_m_group \
-                in M_rmse_mean_std.groupby(bs_hr_a_i + m):
+        # Group by batch_size, hint_rate, alpha, iterations, initialization
+        for (batch_size, hint_rate, alpha, iterations, initialization), bs_hr_a_i_m_group \
+                in M_rmse_mean_std.groupby(bs_hr_a_i + init):
 
             # Get datapoints
             x = bs_hr_a_i_m_group[sparsity]
@@ -520,14 +521,14 @@ def plot_rmse(experiments, sys_info=None, folder='analysis', verbose=False):
             e = bs_hr_a_i_m_group['rmse']['std']
 
             # Data parameters
-            modality, _, primary_color, _ = prepare_data_params(modality.lower())
+            initialization, _, primary_color, _ = prepare_data_params(initialization.lower())
 
             # Set label
-            label = f'{batch_size}_{hint_rate}_{alpha}_{iterations}_{modality}' if show_bs_hr_a_i \
-                else f'{modality[0].upper()}{modality[1:]}'
+            label = f'{batch_size}_{hint_rate}_{alpha}_{iterations}_{initialization}' if show_bs_hr_a_i \
+                else f'{initialization[0].upper()}{initialization[1:]}'
 
             # Add experiment to plot
-            if modality == 'dense':
+            if initialization == 'dense':
                 y_mu = y.iloc[0]
                 y_sigma = y_mu + e.iloc[0], y_mu - e.iloc[0]
 
@@ -569,12 +570,12 @@ def plot_rmse(experiments, sys_info=None, folder='analysis', verbose=False):
         if verbose: print(title)
 
         # Get G_group
-        G_group = d_mr_mm_s_group.drop(ds + dm, axis='columns')
-        G_rmse_mean_std = G_group.groupby(bs_hr_a_i + gs + gm, as_index=False).agg(['mean', 'std'])
+        G_group = d_mr_mm_s_group.drop(ds + di, axis='columns')
+        G_rmse_mean_std = G_group.groupby(bs_hr_a_i + gs + gi, as_index=False).agg(['mean', 'std'])
 
         # Get D_group
-        D_group = d_mr_mm_s_group.drop(gs + gm, axis='columns')
-        D_rmse_mean_std = D_group.groupby(bs_hr_a_i + ds + dm, as_index=False).agg(['mean', 'std'])
+        D_group = d_mr_mm_s_group.drop(gs + gi, axis='columns')
+        D_rmse_mean_std = D_group.groupby(bs_hr_a_i + ds + di, as_index=False).agg(['mean', 'std'])
 
         # Plot subplots
         if nDsm == 1 or nGsm == 1:
@@ -596,21 +597,21 @@ def plot_rmse(experiments, sys_info=None, folder='analysis', verbose=False):
             # Show the influence of different settings for the Generator for different Discriminator settings
             for i in range(nDsm):
                 G_group = d_mr_mm_s_group.where(
-                    (d_mr_mm_s_group['discriminator_sparsity'] == Dsm[i][0])
-                    & (d_mr_mm_s_group['discriminator_modality'] == Dsm[i][1])
+                    (d_mr_mm_s_group['discriminator_initialization'] == Dsm[i][1])
+                    & (d_mr_mm_s_group['discriminator_sparsity'] == Dsm[i][0])
                 )
-                G_group.drop(ds + dm, axis='columns', inplace=True)
-                G_rmse_mean_std = G_group.groupby(bs_hr_a_i + gs + gm, as_index=False).agg(['mean', 'std'])
+                G_group.drop(ds + di, axis='columns', inplace=True)
+                G_rmse_mean_std = G_group.groupby(bs_hr_a_i + gs + gi, as_index=False).agg(['mean', 'std'])
                 subplot(axs[i + 1, 0], G_rmse_mean_std, 'G', legend_ax, Dsm[i][0], Dsm[i][1])
 
             # Show the influence of different settings for the Discriminator for different Generator settings
             for i in range(nGsm):
                 D_group = d_mr_mm_s_group.where(
-                    (d_mr_mm_s_group['generator_sparsity'] == Gsm[i][0])
-                    & (d_mr_mm_s_group['generator_modality'] == Gsm[i][1])
+                    (d_mr_mm_s_group['generator_initialization'] == Gsm[i][1])
+                    & (d_mr_mm_s_group['generator_sparsity'] == Gsm[i][0])
                 )
-                D_group.drop(gs + gm, axis='columns', inplace=True)
-                D_rmse_mean_std = D_group.groupby(bs_hr_a_i + ds + dm, as_index=False).agg(['mean', 'std'])
+                D_group.drop(gs + gi, axis='columns', inplace=True)
+                D_rmse_mean_std = D_group.groupby(bs_hr_a_i + ds + di, as_index=False).agg(['mean', 'std'])
                 subplot(axs[i + 1, 1], D_rmse_mean_std, 'D', legend_ax, Gsm[i][0], Gsm[i][1])
 
         # Plot system information
@@ -635,7 +636,7 @@ def plot_success_rate(experiments, sys_info=None, folder='analysis', verbose=Fal
     :param verbose: enable verbose output to console
     """
 
-    def subplot(ax, M_success_rate, M, legend_ax, legend_loc, sparsity, modality):
+    def subplot(ax, M_success_rate, M, legend_ax, legend_loc, initialization, sparsity):
         """Create a subplot per model setting.
 
         :param ax: the subplot to write to
@@ -643,30 +644,30 @@ def plot_success_rate(experiments, sys_info=None, folder='analysis', verbose=Fal
         :param M: the model this belongs to (Generator or Discriminator)
         :param legend_ax: the subplot to write the legend to
         :param legend_loc: the location of the legend
+        :param initialization: the initialization of the other model (optional)
         :param sparsity: the sparsity of the other model (optional)
-        :param modality: the modality of the other model (optional)
         """
 
         # Subplot parameters
-        subtitle, m, sparsity = prepare_subplot_params(ax, M, sparsity, modality)
+        subtitle, init, sparsity = prepare_subplot_params(ax, M, initialization, sparsity)
 
         # Only show batch_size, hint_rate, alpha and iterations if different settings were tested
         show_bs_hr_a_i = False if M_success_rate.groupby(bs_hr_a_i).ngroups == 1 else True
 
-        # Group by batch_size, hint_rate, alpha, iterations, modality
-        M_success_rate[m[0]] = M_success_rate[m[0]].str.lower()  # Prevent ER(K)(RW) before dense
-        for (batch_size, hint_rate, alpha, iterations, modality), bs_hr_a_i_m_group \
-                in M_success_rate.groupby(bs_hr_a_i + m):
+        # Group by batch_size, hint_rate, alpha, iterations, initialization
+        M_success_rate[init[0]] = M_success_rate[init[0]].str.lower()  # Prevent ER(K)(RW) before dense
+        for (batch_size, hint_rate, alpha, iterations, initialization), bs_hr_a_i_m_group \
+                in M_success_rate.groupby(bs_hr_a_i + init):
             # Get datapoints
             x = bs_hr_a_i_m_group[sparsity].map('{:.0%}'.format)
             y = bs_hr_a_i_m_group['success_rate']
 
             # Data parameters
-            modality, x, primary_color, _ = prepare_data_params(modality, x)
+            initialization, x, primary_color, _ = prepare_data_params(initialization, x)
 
             # Set label
-            label = f'{batch_size}_{hint_rate}_{alpha}_{iterations}_{modality}' if show_bs_hr_a_i \
-                else f'{modality[0].upper()}{modality[1:]}'
+            label = f'{batch_size}_{hint_rate}_{alpha}_{iterations}_{initialization}' if show_bs_hr_a_i \
+                else f'{initialization[0].upper()}{initialization[1:]}'
 
             # Add experiment to plot
             ax.bar(x, y, color=primary_color, label=label, zorder=3)
@@ -699,13 +700,13 @@ def plot_success_rate(experiments, sys_info=None, folder='analysis', verbose=Fal
         if verbose: print(title)
 
         # Get G_group
-        G_group = d_mr_mm_s_group.drop(ds + dm, axis='columns')
-        G_success_rate = G_group.groupby(bs_hr_a_i + gs + gm, as_index=False).agg(['count', 'size'])
+        G_group = d_mr_mm_s_group.drop(ds + di, axis='columns')
+        G_success_rate = G_group.groupby(bs_hr_a_i + gs + gi, as_index=False).agg(['count', 'size'])
         G_success_rate['success_rate'] = G_success_rate['rmse']['count'] / G_success_rate['rmse']['size']
 
         # Get D_group
-        D_group = d_mr_mm_s_group.drop(gs + gm, axis='columns')
-        D_success_rate = D_group.groupby(bs_hr_a_i + ds + dm, as_index=False).agg(['count', 'size'])
+        D_group = d_mr_mm_s_group.drop(gs + gi, axis='columns')
+        D_success_rate = D_group.groupby(bs_hr_a_i + ds + di, as_index=False).agg(['count', 'size'])
         D_success_rate['success_rate'] = D_success_rate['rmse']['count'] / D_success_rate['rmse']['size']
 
         # Plot subplots
@@ -731,22 +732,22 @@ def plot_success_rate(experiments, sys_info=None, folder='analysis', verbose=Fal
             # Show the influence of different settings for the Generator for different Discriminator settings
             for i in range(nDsm):
                 G_group = d_mr_mm_s_group.where(
-                    (d_mr_mm_s_group['discriminator_sparsity'] == Dsm[i][0])
-                    & (d_mr_mm_s_group['discriminator_modality'] == Dsm[i][1])
+                    (d_mr_mm_s_group['discriminator_initialization'] == Dsm[i][1])
+                    & (d_mr_mm_s_group['discriminator_sparsity'] == Dsm[i][0])
                 )
-                G_group.drop(ds + dm, axis='columns', inplace=True)
-                G_success_rate = G_group.groupby(bs_hr_a_i + gs + gm, as_index=False).agg(['count', 'size'])
+                G_group.drop(ds + di, axis='columns', inplace=True)
+                G_success_rate = G_group.groupby(bs_hr_a_i + gs + gi, as_index=False).agg(['count', 'size'])
                 G_success_rate['success_rate'] = G_success_rate['rmse']['count'] / G_success_rate['rmse']['size']
                 subplot(axs[i + 1, 0], G_success_rate, 'G', legend_ax, legend_loc, Dsm[i][0], Dsm[i][1])
 
             # Show the influence of different settings for the Discriminator for different Generator settings
             for i in range(nGsm):
                 D_group = d_mr_mm_s_group.where(
-                    (d_mr_mm_s_group['generator_sparsity'] == Gsm[i][0])
-                    & (d_mr_mm_s_group['generator_modality'] == Gsm[i][1])
+                    (d_mr_mm_s_group['generator_initialization'] == Gsm[i][1])
+                    & (d_mr_mm_s_group['generator_sparsity'] == Gsm[i][0])
                 )
-                D_group.drop(gs + gm, axis='columns', inplace=True)
-                D_success_rate = D_group.groupby(bs_hr_a_i + ds + dm, as_index=False).agg(['count', 'size'])
+                D_group.drop(gs + gi, axis='columns', inplace=True)
+                D_success_rate = D_group.groupby(bs_hr_a_i + ds + di, as_index=False).agg(['count', 'size'])
                 D_success_rate['success_rate'] = D_success_rate['rmse']['count'] / D_success_rate['rmse']['size']
                 subplot(axs[i + 1, 1], D_success_rate, 'D', legend_ax, legend_loc, Gsm[i][0], Gsm[i][1])
 
@@ -790,7 +791,7 @@ def plot_imputation_time(experiments_info, sys_info=None, folder='analysis', ver
             group[key]['imputation_time']['s_gain'] += val['imputation_time']['s_gain']
             group[key]['imputation_time']['finalization'] += val['imputation_time']['finalization']
 
-    def subplot(ax, M_imputation_time, M, legend_ax, legend_loc, sparsity, modality):
+    def subplot(ax, M_imputation_time, M, legend_ax, legend_loc, sparsity, initialization):
         """Create a subplot per model setting.
 
         :param ax: the subplot to write to
@@ -798,20 +799,20 @@ def plot_imputation_time(experiments_info, sys_info=None, folder='analysis', ver
         :param M: the model this belongs to (Generator or Discriminator)
         :param legend_ax: the subplot to write the legend to
         :param legend_loc: the location of the legend
+        :param initialization: the initialization of the other model
         :param sparsity: the sparsity of the other model
-        :param modality: the modality of the other model
 
         :return:
         - y_max: the maximum y value in the plot
         """
 
         # Subplot parameters
-        subtitle, _, sparsity = prepare_subplot_params(ax, M, sparsity, modality)
+        subtitle, _, sparsity = prepare_subplot_params(ax, M, initialization, sparsity)
 
         # Only show batch_size, hint_rate, alpha and iterations if different settings were tested
         show_bs_hr_a_i = False if len({k[:4] for k in M_imputation_time.keys()}) == 1 else True
 
-        # Group by batch_size, hint_rate, alpha, iterations, modality
+        # Group by batch_size, hint_rate, alpha, iterations, initialization
         groups = {}
         for s, v in M_imputation_time.items():
             k = s[:4] + (s[5].lower(),)  # Prevent ER(K)(RW) before dense and sort
@@ -822,7 +823,7 @@ def plot_imputation_time(experiments_info, sys_info=None, folder='analysis', ver
         groups = dict(sorted(groups.items()))
 
         y_max = 0
-        for (batch_size, hint_rate, alpha, iterations, modality), bs_hr_a_i_m_group in groups.items():
+        for (batch_size, hint_rate, alpha, iterations, initialization), bs_hr_a_i_m_group in groups.items():
             bs_hr_a_i_m_group = dict(sorted(bs_hr_a_i_m_group.items()))
 
             # Get datapoints
@@ -855,11 +856,11 @@ def plot_imputation_time(experiments_info, sys_info=None, folder='analysis', ver
                 y_max = max([y_total[j] + e_total[j] for j in range(len(y_total))] + [y_max])
 
             # Data parameters
-            modality, x, primary_color, secondary_color = prepare_data_params(modality, x)
+            initialization, x, primary_color, secondary_color = prepare_data_params(initialization, x)
 
             # Set label
-            label = f'{batch_size}_{hint_rate}_{alpha}_{iterations}_{modality}' if show_bs_hr_a_i \
-                else f'{modality[0].upper()}{modality[1:]}'
+            label = f'{batch_size}_{hint_rate}_{alpha}_{iterations}_{initialization}' if show_bs_hr_a_i \
+                else f'{initialization[0].upper()}{initialization[1:]}'
 
             # Add experiment to plot Todo outliers
             ax.bar(x, y_preparation, color=secondary_color, zorder=3)
