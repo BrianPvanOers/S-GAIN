@@ -208,6 +208,7 @@ discriminator_use_strategy = False
 # separate initialization, pruning and regrowing strategies.
 # Default: False
 
+
 # -- Output settings --------------------------------------------------------------------------------------------------
 
 output_folder = 'output'
@@ -328,7 +329,7 @@ inclusions = [{
     'n_runs': 1,
     'enable_FLOPs_monitor': True,
     'output_folder': 'output_FLOPs',
-    'analysis_folder': 'analysis_FLOPs'
+    'perform_analysis': False
 }]
 # An inclusion is a dictionary of settings. It overwrites the base
 # config and adds the newly specified experiments. The config reloads
