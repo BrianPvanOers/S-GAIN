@@ -67,6 +67,81 @@ def binary_sampler(p, rows, cols, seed=None):
     return binary_random_matrix
 
 
+def MAR1(X_data, prob, rows, cols, seed=None):
+    """Sample variables distributed Missing at Random (MAR).
+
+    This method uses the formula from the supplementary materials of:
+    J. Yoon, J. Jordon, M. van der Schaar, "GAIN: Missing Data Imputation using Generative Adversarial Nets", ICML,
+    2018. https://proceedings.mlr.press/v80/yoon18a/yoon18a.pdf.
+    And was implemented by: Lars van Soest, Rune Ebbers, and Ryan Bartelds.
+
+    :param X_data: the original dataset.
+    :param prob: the probability of the missing values.
+    :param rows: the number of rows (entries).
+    :param cols: the number of columns (features).
+    :param seed: the random seed.
+
+    :return: a MAR distributed matrix.
+    """
+
+    # Fix the seed for run-to-run consistency
+    if seed: np.random.seed(seed)
+
+    # Initialize W (weight) and b (bias) matrix for every j (the first value is W, the second is b) and the MAR matrix
+    Wb_matrix = np.random.uniform(0., 1., size=(2, cols))
+    MAR_matrix = np.random.uniform(0., 1., size=(rows, cols))
+
+    # Calculate the MAR matrix
+    for i in range(cols):
+        vectors = []
+        for l in range(rows):
+            vector = Wb_matrix[0] * MAR_matrix[l] * X_data[l] + Wb_matrix[1] * (1 - MAR_matrix[l])
+            vectors.append(np.sum(vector[0:i]))
+        vectors = np.array(vectors)
+        divisor = np.sum(np.exp(-vectors))
+
+        for n in range(rows):
+            result = prob * rows * np.exp(-vectors[n]) / divisor
+            MAR_matrix[n][i] = 1 * (MAR_matrix[n][i] < result)
+
+    MAR_matrix = 1 - MAR_matrix
+
+    return MAR_matrix
+
+
+def MNAR1(X_data, prob, rows, cols, seed=None):
+    """Sample variables distributed Missing not at Random (MNAR).
+
+    This method uses the formula from the supplementary materials of:
+    J. Yoon, J. Jordon, M. van der Schaar, "GAIN: Missing Data Imputation using Generative Adversarial Nets", ICML,
+    2018. https://proceedings.mlr.press/v80/yoon18a/yoon18a.pdf
+    And was implemented by: Lars van Soest, Rune Ebbers, and Ryan Bartelds.
+
+    :param X_data: the original dataset.
+    :param prob: the probability of the missing values.
+    :param rows: the number of rows (entries).
+    :param cols: the number of columns (features).
+    :param seed: the random seed.
+
+    :return: a MAR distributed matrix.
+    """
+
+    # Fix the seed for run-to-run consistency
+    if seed: np.random.seed(seed)
+
+    # Initialize W (weight) and b (bias) matrix for every j (the first value is W, the second is b) and the MNAR matrix
+    W_array = np.random.uniform(0., 1., size=(cols,))
+    MNAR_matrix = np.random.uniform(0., 1., size=(rows, cols))
+
+    # Calculate the MNAR matrix
+    numerators = np.exp(-W_array[:, None] * X_data.T)
+    denominators = np.sum(numerators, axis=1)
+    numerators = prob * rows * numerators
+    MNAR_matrix = 1 * (MNAR_matrix >= (numerators.T / denominators))
+
+    return MNAR_matrix
+
+
 # -- Other functions --------------------------------------------------------------------------------------------------
 
 def sample_batch_index(total, batch_size):
