@@ -48,7 +48,7 @@ def data_loader(dataset, miss_rate, miss_modality, seed=None):
         data_mask = binary_sampler(1 - miss_rate, no, dim, seed)
         miss_data_x = data_x.copy()
         miss_data_x[data_mask == 0] = np.nan
-    else:
+    else:  # This should not happen
         print(f'Invalid miss modality: "{miss_modality}". Exiting the program.')
         return None
 

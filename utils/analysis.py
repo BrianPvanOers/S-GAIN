@@ -174,7 +174,7 @@ def prepare_plot(nGsm, nDsm, ax_width=6.4, ax_height=4.8, share_axis=False):
         info_ax = axs[info_ax[0], info_ax[1]]
         legend_ax = axs[legend_ax[0], legend_ax[1]]
 
-    return fig, axs, info_ax, legend_ax, legend_loc
+    return fig, axs, info_ax, legend_ax, legend_loc, y_title
 
 
 def prepare_text(dataset, miss_rate, miss_modality, seed, sys_info=None):

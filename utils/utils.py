@@ -206,7 +206,7 @@ def MNAR3(data_x, prob, rows, cols, seed=None):
                 # The value is missing
                 data_mask[n][i] = 0
                 miss_data_x[n][i] = np.nan
-                
+
     return miss_data_x, data_mask
 
 
