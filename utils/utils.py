@@ -67,70 +67,150 @@ def binary_sampler(p, rows, cols, seed=None):
     return binary_random_matrix
 
 
-def uniform_sampler(low, high, rows, cols, seed=None):
-    """Sample uniform random variables.
+def MAR3(data_x, prob, rows, cols, seed=None):
+    """Sample variables distributed Missing at Random (MAR).
 
-    :param low: the low limit
-    :param high: the high limit
-    :param rows: the number of rows
-    :param cols: the number of columns
+    This method uses the formula from the supplementary materials of:
+    J. Yoon, J. Jordon, M. van der Schaar, "GAIN: Missing Data Imputation using Generative Adversarial Nets", ICML,
+    2018. https://proceedings.mlr.press/v80/yoon18a/yoon18a.pdf.
+    And was implemented by: Adam Bosch, Roman Ladus, and Vlad Negara.
 
-    :return:
-    - uniform_random_matrix: a uniform random matrix
-    """
-
-    if seed is not None: 
-        np.random.seed(seed=seed)
-
-    uniform_random_matrix = np.random.uniform(low, high, size=(rows, cols))
-    return uniform_random_matrix
-
-def missing_square_masks(miss_rate, rows, cols, seed):
-    """For a list of flattened images, create a list of masks that remove a
-    square from each image.
-
-    The function assumes that each flattened image was originally square.
-
-    :param miss_rate: the ratio between the size of the missing square and the
-    size of the image
-    :param rows: the number of images
-    :param cols: the number of pixels in each (flattened) image
-    :param seed: the seed
+    :param data_x: the original dataset.
+    :param prob: the probability of the missing values.
+    :param rows: the number of rows (entries).
+    :param cols: the number of columns (features).
+    :param seed: the random seed.
 
     :return:
-    - mask_arr: an array of the size of the original dataset with values of 0 or 1 depending on if the values should be included    
+    - miss_data_x: the data with missing values distributed MAR.
+    - data_mask: the indicator matrix for missing values distributed MAR.
     """
-    seed = np.random.seed(seed)
-    mask = []
 
-    # Loop over flattened images
-    for _ in range(rows):
-        # Size of the image is the square root of the number of pixels
-        # We want to unflatten the image
-        image_size = int(cols**0.5)
-        temp_mask = np.ones((image_size, image_size))
+    # Fix the seed for run-to-run consistency
+    if seed: np.random.seed(seed)
 
-        square_size = int((miss_rate**0.5) * image_size)
-        
-        # The max_pos is how far the square can be from the top left corner
-        max_pos = image_size - square_size
+    # Uniform p_m
+    p_m = np.full((cols,), prob)
 
-        # Left and upper edges of the square
-        square_left_x = np.random.randint(0, max_pos)
-        square_upper_y = np.random.randint(0, max_pos)
+    # Array to memoize sums in exponents in the formula. Cell [n][i] holds the sum over j<i
+    exponent_terms = np.zeros(shape=(rows, cols + 1))
 
-        # Right and lower edges of the square
-        square_right_x = square_left_x + square_size
-        square_lower_y = square_upper_y + square_size
+    # Array to memoize the denominator in the formula
+    denominators = np.zeros(shape=(cols + 1,))
 
-        # Set values in the square to 0
-        temp_mask[square_left_x:square_right_x, square_upper_y:square_lower_y] = 0
+    # The first denominator is always equal to rows
+    denominators[0] = rows
 
-        # Flatten the mask to match original dataset
-        mask.append(temp_mask.flatten())
+    # Initialize random weights with the U(0,1) distribution
+    w = np.random.uniform(0., 1., size=cols)
 
-    mask_arr = np.array(mask)
-    return mask_arr
+    # Initialize random biases with the U(0,1) distribution
+    b = np.random.uniform(0., 1., size=cols)
+
+    # Initialize the mask and the data with missingness
+    data_mask = np.ones(shape=(rows, cols))
+    miss_data_x = data_x.copy()
+
+    # Normalize data using min-max scaling
+    data_x_min = data_x.min(axis=0)
+    data_x_max = data_x.max(axis=0)
+    data_x_normalized = (data_x.copy() - data_x_min) / (data_x_max - data_x_min)
+
+    # Iterate over the features, then the rows
+    for i in range(cols):
+        for n in range(rows):
+            # Extract the memoized exponent in the numerator of the formula
+            numerator_exponent = exponent_terms[n][i]
+
+            # Extract the memoized denominator of the formula
+            denominator = denominators[i]
+
+            # Compute the probability of missingness using the formula
+            P = p_m[i] * rows * np.exp(-numerator_exponent) / denominator
+
+            # Generate a random value between 0 and 1 to check against the probability
+            uniform_random_value = np.random.uniform()
+            if uniform_random_value < P:
+                # The value is missing
+                data_mask[n][i] = 0
+                miss_data_x[n][i] = np.nan
+
+                # Add the bias of this feature to the memorized numerator exponent for the next feature
+                exponent_terms[n][i + 1] = exponent_terms[n][i] + b[i]
+            else:
+                # Add the weighted value of this feature to the memorized numerator exponent for the next feature
+                exponent_terms[n][i + 1] = exponent_terms[n][i] + w[i] * data_x_normalized[n][i]
+
+            # Add the numerator exponent for the next feature to its memorized denominator
+            denominators[i + 1] += np.exp(-exponent_terms[n][i + 1])
+
+    return miss_data_x, data_mask
+
+
+def MNAR3(data_x, prob, rows, cols, seed=None):
+    """Sample variables distributed Missing not at Random (MNAR).
+
+    This method uses the formula from the supplementary materials of:
+    J. Yoon, J. Jordon, M. van der Schaar, "GAIN: Missing Data Imputation using Generative Adversarial Nets", ICML,
+    2018. https://proceedings.mlr.press/v80/yoon18a/yoon18a.pdf
+    And was implemented by: Adam Bosch, Roman Ladus, and Vlad Negara.
+
+    :param data_x: the original dataset.
+    :param prob: the probability of the missing values.
+    :param rows: the number of rows (entries).
+    :param cols: the number of columns (features).
+    :param seed: the random seed.
+
+    :return:
+    - miss_data_x: the data with missing values distributed MAR.
+    - data_mask: the indicator matrix for missing values distributed MAR.
+    """
+
+    # Fix the seed for run-to-run consistency
+    if seed: np.random.seed(seed)
+
+    # Uniform p_m
+    p_m = np.full((cols,), prob)
+
+    # Initialize random weights with the U(0,1) distribution
+    w = np.random.uniform(0., 1., size=cols)
+
+    # Normalize data using min-max scaling
+    data_x_min = data_x.min(axis=0)
+    data_x_max = data_x.max(axis=0)
+    data_x_normalized = (data_x.copy() - data_x_min) / (data_x_max - data_x_min)
+
+    # Array to memoize the denominator in the formula
+    denominators = np.zeros(shape=(cols,))
+    for i in range(cols):
+        for n in range(rows):
+            denominators[i] += np.exp(-w[i] * data_x_normalized[n][i])
+
+    # Initialize the mask and the data with missingness
+    data_mask = np.ones(shape=(rows, cols))
+    miss_data_x = data_x.copy()
+
+    # Iterate over the features, then the rows
+    for i in range(cols):
+        for n in range(rows):
+            # Extract the memoized denominator of the formula
+            denominator = denominators[i]
+
+            # Compute the probability of missingness using the formula
+            P = p_m[i] * rows * np.exp(-w[i] * data_x_normalized[n][i]) / denominator
+
+            # Generate a random value between 0 and 1 to check against the
+            # probability
+            uniform_random_value = np.random.uniform()
+            if uniform_random_value < P:
+                # The value is missing
+                data_mask[n][i] = 0
+                miss_data_x[n][i] = np.nan
+                
+    return miss_data_x, data_mask
+
+
+# -- Other functions --------------------------------------------------------------------------------------------------
 
 def sample_batch_index(total, batch_size):
     """Sample index of the mini-batch.
