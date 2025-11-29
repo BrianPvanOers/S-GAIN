@@ -15,16 +15,17 @@
 """Contains standardization functions for S-GAIN.
 
 Helper functions:
-(1) standardize: standardize value(s) based on a key
+(1) standardize: standardize value(s) based on a key.
 
 Standardizers:
-(2) standardize_dataset: standardize the dataset
-(3) standardize_miss_modality: standardize the miss modality
-(4) standardize_version: standardize the version
-(5) standardize_init: standardize the sparsity and the initialization
-(6) standardize_pruner: standardize the pruner
-(7) standardize_regrower: standardize the regrower
-(8) standardize_strategy: standardize the strategy
+(2) standardize_dataset: standardize the dataset (for the original data_loader).
+(3) standardize_dataset2: standardize the dataset (for dataloader2 in the dataprep package).
+(4) standardize_miss_modality: standardize the miss modality.
+(5) standardize_version: standardize the version.
+(6) standardize_init: standardize the sparsity and the initialization.
+(7) standardize_pruner: standardize the pruner.
+(8) standardize_regrower: standardize the regrower.
+(9) standardize_strategy: standardize the strategy.
 """
 
 
@@ -56,6 +57,7 @@ def standardize(key, value):
 
 def standardize_dataset(dataset):
     """Standardize the dataset.
+    * For the original data_loader.
 
     :param dataset: the dataset
 
@@ -70,6 +72,32 @@ def standardize_dataset(dataset):
     if dataset.lower() in ['spam', 'letter', 'health']: return dataset.lower()
     if dataset.lower() in ['mnist', 'cifar10']: return dataset.upper()
     if dataset.lower() == 'fashion_mnist': return 'Fashion_MNIST'
+    return dataset
+
+
+def standardize_dataset2(dataset):
+    """Standardize the dataset.
+    * For dataloader2 in the dataprep package.
+
+    :param dataset: the dataset.
+
+    :return: the standardized dataset.
+    """
+
+    # Handle lists
+    if type(dataset) == list: return [standardize_dataset(d) for d in dataset]
+
+    # Standardize
+    if not dataset: return None
+    dl = dataset.lower()
+    if 'health' in dl or dl == 'mhr': return 'MHR'
+    if 'breast' in dl or dl in ['bcwd', 'bcw', 'bcd']: return 'BCWD'
+    if 'credit' in dl or dl in ['dccc', 'dcc']: return 'DCCC'
+    if 'news' in dl or dl == 'onp': return 'ONP'
+    if 'letter' in dl or dl == 'lr': return 'LR'
+    if 'spam' in dl or dl == 'sb': return 'SB'
+    if dl in ['mnist', 'cifar10']: return dataset.upper()
+    if dl == 'fashion_mnist': return 'Fashion_MNIST'
     return dataset
 
 

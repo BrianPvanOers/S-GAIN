@@ -14,7 +14,7 @@ https://github.com/BrianPvanOers/S-GAIN/releases/tag/v0.1.0-alpha) *
 Contact: b.p.vanoers@student.utwente.nl
 
 \* Alternatively, for easy replication, one may load the IDEAL2025 settings to run the experiments associated with this
-paper, with the current tools.
+paper with the current tools.
 
 ---
 

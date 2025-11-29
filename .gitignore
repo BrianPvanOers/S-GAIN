@@ -2,12 +2,8 @@
 .venv/
 .vscode/
 __pycache__/
-analysis*/
-datasets/feature_added/
-datasets/prepared/
-datasets/private/
-feature_added_datasets*/
-prepared_datasets*/
-private_datasets*/
-output*/
+*analysis*/
+*datasets*/*
+!datasets/README.md
+*output*/
 temp/

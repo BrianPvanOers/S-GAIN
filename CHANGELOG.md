@@ -7,7 +7,7 @@ This file marks the changes since the submission of the manuscript to the IDEAL 
 This version implements S-GAIN in TensorFlow v2, uses INT8 precision for quantization, and uses sparse tensors (COO
 matrices).
 
-## Pre-release v0.1.4-alpha (in development)
+## Pre-release v0.1.5-beta (TBD)
 
 This version is currently being developed and seeks to implement full monitoring of system resources.
 
@@ -19,20 +19,26 @@ This version is currently being developed and seeks to implement full monitoring
 - GPU temperatures (to check for throttling).
 - GPU VRAM usage.
 
-Some other changes include:
+## Pre-release v0.1.4-beta (in development)
 
-- Improved dataloader, now returns features and labels.
+This version implements Statistical Feature Addition (SFA).
 
-## Pre-release v0.1.3-alpha (11-10-2025)
 
-This version saw major a major overhaul of the testing framework and major improvements to the analysis. This version
-marks the end of my role as project supervisor for Missing Data and Dynamic Sparse Training in the Data Science and
-Artificial Intelligence elective at the University of Twente. It also unifies the work of my students with my own work,
-and includes the work of my own Research Project.
+## Pre-release v0.1.3-alpha (in development)
+
+This version saw a major overhaul of the testing framework and major improvements to the analysis. This version marks
+the end of my role as project supervisor for Missing Data and Dynamic Sparse Training in the Data Science and Artificial
+Intelligence elective at the University of Twente. It unifies the work of my students with my own work, and includes the
+work of my own Research Project.
 
 - Switched to a config based project structure.
-- Implemented new miss modalities: MAR, MNAR, upscaler and square.
-- Can now store prepared datasets for analysis or to speed up slow miss modalities.
+- New dataprep package with upgraded dataloader (more details are provided in the package changelog):
+  - Implements MAR and MNAR distributions.
+  - Directly imports datasets from the UCI repository.
+  - Returns the header and optionally the labels.
+  - Can download the datasets for offline access.
+  - Distributions are now independent of utils.utils.
+  - Includes readme and changelog.
 - Implemented pruners, regrowers, and complete training strategies.
 - Implemented imputation time analysis.
 - Immediately terminate failed experiments to speed up testing.
