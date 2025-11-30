@@ -25,13 +25,13 @@ datasets can be stored for offline access.
 
 ## Description of datasets
 
-All datasets listed are single class (highlighted in bold). No multi-class datasets are included. Non-predictive
+All datasets listed are single target (highlighted in bold). No multi-target datasets are included. Non-predictive
 features are highlighted in italics.
 
 ### Maternal Health Risk
 
 This is a small medical dataset without missing values. It can therefore be used to assess the quality of the imputation
-method, by introducing missing values ourselves. It has 6 features, 1 label, 1013 instances, and is anonymized. More
+method, by introducing missing values ourselves. It has 6 features, 1 target, 1013 instances, and is anonymized. More
 information can be found in the reference.
 
 #### Explanation of features
@@ -51,7 +51,7 @@ Ahmed, M. (2020). Maternal Health Risk [Dataset]. UCI Machine Learning Repositor
 ### Breast Cancer Wisconsin (Diagnostic)
 
 This is also a small medical dataset without missing values. It has more features than the Maternal Health Risk dataset.
-It is used to predict breast cancer. It has 30 (+1 non-predictive) features, 1 class, 569 instances, and is anonymized.
+It is used to predict breast cancer. It has 30 (+1 non-predictive) features, 1 target, 569 instances, and is anonymized.
 It was used in \[1]. More information can be found in the reference.
 
 #### Explanation of features
@@ -104,7 +104,7 @@ Machine Learning Repository. https://doi.org/10.24432/C5DW2B.
 
 This research aimed at the case of customers' default payments in Taiwan and compares the predictive accuracy of
 probability of default among six data mining methods. It has no missing values, 23 (+1 non-predictive) features, 1
-class, 30000 instances, and is anonymized. It was used in \[1]. More information can be found in the reference.
+target, 30000 instances, and is anonymized. It was used in \[1]. More information can be found in the reference.
 
 #### Explanation of features
 
@@ -152,7 +152,7 @@ https://doi.org/10.24432/C55S3H.
 
 This dataset summarizes a heterogeneous set of features about articles published by Mashable in a period of two years.
 The goal is to predict the number of shares in social networks (popularity). It has no missing values, 58 (+2
-non-predictive) features, 1 class, and 39797 instances. It was used in \[1]. More information can
+non-predictive) features, 1 target, and 39797 instances. It was used in \[1]. More information can
 be found in the reference.
 
 #### Explanation of features
@@ -229,7 +229,7 @@ Repository. https://doi.org/10.24432/C5NS3V.
 ### Letter Recognition
 
 This is a dataset used for classifying capital letters in the english alphabet. It has no missing values, 16 features,
-1 class, and 20000 instances. It was used in \[1]. More information can be found in the references.
+1 target, and 20000 instances. It was used in \[1]. More information can be found in the references.
 
 #### Explanation of features
 
@@ -259,7 +259,7 @@ Slate, D. (1991). Letter Recognition [Dataset]. UCI Machine Learning Repository.
 
 ### Spambase
 
-This is a dataset used for classifying emails as either Spam or Non-Spam. It has 57 features, 1 class, and 4601
+This is a dataset used for classifying emails as either Spam or Non-Spam. It has 57 features, 1 target, and 4601
 instances. It was used in \[1]. More information can be found in the reference.
 
 #### Explanation of features
@@ -336,7 +336,7 @@ https://doi.org/10.24432/C53G6X.
 
 ### MNIST
 
-This is a popular image dataset consisting of handwritten digits. It has 28 x 28 x 1 features, 1 class, and 60000
+This is a popular image dataset consisting of handwritten digits. It has 28 x 28 x 1 features, 1 target, and 60000
 instances. More information can be found in the references.
 
 **Labels:** Digits from 0-9.
@@ -349,7 +349,7 @@ TensorFlow website: https://www.tensorflow.org/datasets/catalog/mnist
 ### Fashion_MNIST TODO
 
 This is another popular image dataset consisting of Zalando's article images. It is favored over MNIST, because of its
-higher complexity, and is intended to be a drop in replacement. It has 28 x 28 x 1 features, 1 class, and 60000
+higher complexity, and is intended to be a drop in replacement. It has 28 x 28 x 1 features, 1 target, and 60000
 instances. More information can be found in the references.
 
 #### Labels
@@ -368,7 +368,7 @@ Homepage: https://github.com/zalandoresearch/fashion-mnist
 ### CIFAR10
 
 This is also a popular image dataset. It uses color channels in contrast to (Fashion_)MNIST datasets, which are in
-greyscale. It has 32 x 32 x 3 features, 1 class, and 50000 instances. More information can be found in the
+greyscale. It has 32 x 32 x 3 features, 1 target, and 50000 instances. More information can be found in the
 references.
 
 #### Labels
