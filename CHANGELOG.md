@@ -35,7 +35,7 @@ work of my own Research Project.
 - New dataprep package with upgraded dataloader (more details are provided in the package changelog):
   - Implements MAR and MNAR distributions.
   - Directly imports datasets from the UCI repository.
-  - Returns the header and optionally the labels.
+  - Returns the header and target(s).
   - Can download the datasets for offline access.
   - Distributions are now independent of utils.utils.
   - Includes readme and changelog.

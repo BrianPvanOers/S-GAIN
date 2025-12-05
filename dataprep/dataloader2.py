@@ -14,11 +14,11 @@
 
 """Data preparation functions.
 
-Data loader:
-(1) dataloader: load a dataset and the header.
+Data loader
+(1) dataloader: Load a dataset and the header.
 
-Data preparation:
-(2) dataprep: load a dataset and introduce missing values.
+Data preparation
+(2) dataprep: Load a dataset and introduce missing values.
 """
 
 import numpy as np
@@ -28,23 +28,23 @@ from ucimlrepo import fetch_ucirepo
 from os import makedirs
 from os.path import isfile, isdir
 
-from dataprep.distributions import MCAR
+from dataprep.distributions import MCAR, MAR1, MAR3, MNAR1, MNAR3
 from utils.standardizers import standardize_dataset, standardize_distribution
 
 
 # -- Data loader ------------------------------------------------------------------------------------------------------
 
-def dataloader(dataset, labels=False, store=False, verbose=False):
+def dataloader(dataset, store=False, verbose=False):
     """Load a dataset and the header.
 
     Args:
         dataset: the dataset to use.
-        labels: whether to include the labels for imputation or not.
         store: whether to store the downloaded dataset.
         verbose: enable verbose output to the console.
 
     Returns:
         x_data: the data.
+        x_labels: the labels. TODO standardize as either df or np array + header
         header: the header of the dataset.
     """
 
@@ -52,7 +52,7 @@ def dataloader(dataset, labels=False, store=False, verbose=False):
     dataset = standardize_dataset(dataset)
     filepath = f'datasets/{dataset}.csv'
 
-    if verbose: print(f'\nLoading the dataset...')
+    if verbose: print(f'\nLoading the {dataset} dataset...')
 
     # -- Tabular datasets (UCI repository) ----------------------------------------------------------------------------
 
@@ -87,8 +87,10 @@ def dataloader(dataset, labels=False, store=False, verbose=False):
         non_predictive = uci_id(dataset)[2]
         if non_predictive is not None: x_data.drop(columns=x_data.columns[non_predictive], inplace=True)
 
-        # Exclude the labels
-        if not labels: x_data.drop(columns=x_data.columns[uci_id(dataset)[1]], inplace=True)
+        # Separate target(s) from data
+        target_loc = uci_id(dataset)[1]
+        x_labels = x_data.iloc[:, target_loc]
+        x_data.drop(columns=x_data.columns[target_loc], inplace=True)
 
         # Get the header and convert to numpy array
         header = x_data.columns.tolist()
@@ -103,8 +105,9 @@ def dataloader(dataset, labels=False, store=False, verbose=False):
             if verbose: print('Loading from disk...')
             x_data = pd.read_csv(filepath, delimiter=',')
 
-            # Exclude the labels
-            if not labels: x_data.drop(columns=x_data.columns[-1], inplace=True)
+            # Separate target(s) from data
+            x_labels = x_data.iloc[:, -1]
+            x_data.drop(columns=x_data.columns[-1], inplace=True)
 
             # Get the header and convert to numpy array
             header = x_data.columns.tolist()
@@ -126,25 +129,14 @@ def dataloader(dataset, labels=False, store=False, verbose=False):
             # Load the dataset
             (x_data, x_labels), _ = kd.load_data()
             x_data = np.reshape(np.asarray(x_data), shape).astype(float)
+            x_labels = np.reshape(np.asarray(x_labels), [shape[0], 1]).astype(float)
             header = list(range(shape[1]))
-
-            # Include labels
-            if labels:
-                x_labels = np.reshape(np.asarray(x_labels), [shape[0], 1]).astype(float)
-                x_data = np.append(x_data, x_labels, axis=1)
-                header += ['class']
 
             # Store the dataset
             if store:
                 if verbose: print('Storing the dataset on the disk...')
-
-                if labels:
-                    temp_x_data = x_data
-                    temp_header = header
-                else:
-                    x_labels = np.reshape(np.asarray(x_labels), [shape[0], 1]).astype(float)
-                    temp_x_data = np.append(x_data, x_labels, axis=1)
-                    temp_header = header + ['class']
+                temp_x_data = np.append(x_data, x_labels, axis=1)
+                temp_header = header + ['class']
 
                 temp_x_data = pd.DataFrame(temp_x_data, columns=temp_header)
                 temp_x_data.to_csv(filepath, index=False)
@@ -158,18 +150,17 @@ def dataloader(dataset, labels=False, store=False, verbose=False):
     # -----------------------------------------------------------------------------------------------------------------
 
     if verbose: print('Finished loading the dataset.')
-    return x_data, header
+    return x_data, x_labels, header
 
 
 # -- Data preparation -------------------------------------------------------------------------------------------------
 
-def dataprep(dataset, prob, dist, seed=None, labels=False, prepdata_folder='datasets/prepared', store=False,
-             dictionary=False, verbose=False):
+def dataprep(dataset, prob, dist, seed=None, prepdata_folder='datasets/prepared', store=False, verbose=False):
     """Load a dataset and introduce missing values:
     (1) Load a dataset.
     (2) Introduce missing values according to the specified distribution and probability (optional).
     (3) Remove header.
-    (4) Remove labels (optional).
+    (4) Remove target (optional).
     (5) Return list or dictionary.
 
     Args:
@@ -177,10 +168,8 @@ def dataprep(dataset, prob, dist, seed=None, labels=False, prepdata_folder='data
         prob: the probability of the missing values in the dataset.
         dist: the distribution of the missing values in the dataset [MCAR, MAR, MNAR].
         seed: the random seed used introduce the missing values in the dataset.
-        labels: whether to include the labels for imputation or not.
         prepdata_folder: the folder to store the prepared datasets in.
         store: whether to store the downloaded/prepared datasets.
-        dictionary: the format of the dataset [DataFrame, dictionary, list].
         verbose: enable verbose output to the console.
 
     Returns:
@@ -193,17 +182,16 @@ def dataprep(dataset, prob, dist, seed=None, labels=False, prepdata_folder='data
     dataset = standardize_dataset(dataset)
     dist = standardize_distribution(dist)
     if seed is None: seed = np.random.randint(2 ** 31)
-    filename = f'{dataset}#{prob}#{dist}#{seed:08x}#{int(labels)}'
+    filename = f'{dataset}#{prob}#{dist}#{seed:08x}'
 
     # Output to console
     if verbose:
         if verbose != 'main': print(f'\n{filename}')
 
-    # Load the dataset TODO (immediately return if it already has missing values)
-    x_data, header = dataloader(dataset, labels)
-    if dataset == 'PSCD': return x_data, header
+    # Load the dataset
+    x_data, x_labels, header = dataloader(dataset, store, verbose)
 
-    # Try to load a prepared dataset
+    # Try to load the prepared dataset
     prepared_dataset = f'{prepdata_folder}/{filename}.csv'
     if isfile(prepared_dataset):
         if verbose: print('Loading the prepared dataset from disk...')
@@ -212,19 +200,29 @@ def dataprep(dataset, prob, dist, seed=None, labels=False, prepdata_folder='data
         mask[np.isnan(x_miss)] = 0
         if verbose: print('Finished loading the prepared dataset.')
 
+    # Introduce missing values
     elif dist == 'MCAR':
         if verbose: print(f'Introducing {prob} missing values MCAR...')
         x_miss, mask = MCAR(x_data, prob, seed)
-
-    # TODO MAR MNAR
+    # TODO Unify MAR, MNAR
+    elif dist == 'MAR1':
+        if verbose: print(f'Introducing {prob} missing values MAR1...')
+        x_miss, mask = MAR1(x_data, prob, seed)
+    elif dist == 'MAR3':
+        if verbose: print(f'Introducing {prob} missing values MAR3...')
+        x_miss, mask = MAR3(x_data, prob, seed)
+    elif dist == 'MNAR1':
+        if verbose: print(f'Introducing {prob} missing values MNAR1...')
+        x_miss, mask = MNAR1(x_data, prob, seed)
+    elif dist == 'MNAR3':
+        if verbose: print(f'Introducing {prob} missing values MCAR...')
+        x_miss, mask = MNAR3(x_data, prob, seed)
     elif dist in ['MAR', 'MNAR']:
-        # if verbose: print(f'Introducing {prob} missing values {dist}...')
         print(f'Distribution: {dist} is not implemented yet.\nExiting the program...')
-        return None
-
+        return [None] * 5
     else:  # This should not happen
         print(f'Invalid distribution: {dist}.\nExiting the program...')
-        return None
+        return [None] * 5
 
     # Store prepared dataset
     if store:
@@ -232,14 +230,4 @@ def dataprep(dataset, prob, dist, seed=None, labels=False, prepdata_folder='data
         if not isdir(prepdata_folder): makedirs(prepdata_folder)
         np.savetxt(prepared_dataset, x_miss, delimiter=',')
 
-    # Return dictionary
-    if dictionary:
-        return {
-            'x_data': x_data,
-            'x_miss': x_miss,
-            'mask': mask,
-            'header': header,
-            'labels': labels
-        }
-
-    return x_data, x_miss, mask, header
+    return x_data, x_miss, mask, x_labels, header

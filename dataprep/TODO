@@ -1,2 +1,4 @@
 Add README
+PSCD datasets (categorical variables to integers, store the mapping)
 Unify MAR and MNAR implementations
+5-fold cross-validation for target imputation

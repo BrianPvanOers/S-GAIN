@@ -37,9 +37,8 @@ def MCAR(data, prob, seed=None):
         prob: the probability of the missing values.
 
     Returns:
-        miss_data: the data with missing values.
+        miss: the data with missing values distributed MCAR.
         mask: the indicator matrix for missing values.
-
     """
 
     # Fix seed for run-to-run consistency
@@ -50,13 +49,13 @@ def MCAR(data, prob, seed=None):
     mask = 1 * (uniform_random_matrix >= prob)
 
     # Introduce missing values
-    miss_data = data.copy()
-    miss_data[mask == 0] = np.nan
+    miss = data.copy()
+    miss[mask == 0] = np.nan
 
-    return miss_data, mask
+    return miss, mask
 
 
-def MAR1(X_data, prob, rows, cols, seed=None):
+def MAR1(data, prob, seed=None):
     """Sample variables distributed Missing at Random (MAR).
 
     This method uses the formula from the supplementary materials of:
@@ -64,41 +63,47 @@ def MAR1(X_data, prob, rows, cols, seed=None):
     2018. https://proceedings.mlr.press/v80/yoon18a/yoon18a.pdf.
     And was implemented by: Lars van Soest, Rune Ebbers, and Ryan Bartelds.
 
-    :param X_data: the original dataset.
-    :param prob: the probability of the missing values.
-    :param rows: the number of rows (entries).
-    :param cols: the number of columns (features).
-    :param seed: the random seed.
+    Args:
+        data: the original dataset.
+        prob: the probability of the missing values.
+        seed: the random seed.
 
-    :return: a MAR distributed matrix.
+    Returns:
+        miss: the data with missing values distributed MAR.
+        mask: the indicator matrix for missing values.
     """
 
     # Fix the seed for run-to-run consistency
     if seed: np.random.seed(seed)
 
+    # Get the shape
+    rows, cols = data.shape
+
     # Initialize W (weight) and b (bias) matrix for every j (the first value is W, the second is b) and the MAR matrix
     Wb_matrix = np.random.uniform(0., 1., size=(2, cols))
-    MAR_matrix = np.random.uniform(0., 1., size=(rows, cols))
+    mask = np.random.uniform(0., 1., size=(rows, cols))
 
     # Calculate the MAR matrix
     for i in range(cols):
         vectors = []
         for l in range(rows):
-            vector = Wb_matrix[0] * MAR_matrix[l] * X_data[l] + Wb_matrix[1] * (1 - MAR_matrix[l])
+            vector = Wb_matrix[0] * mask[l] * data[l] + Wb_matrix[1] * (1 - mask[l])
             vectors.append(np.sum(vector[0:i]))
         vectors = np.array(vectors)
         divisor = np.sum(np.exp(-vectors))
 
         for n in range(rows):
             result = prob * rows * np.exp(-vectors[n]) / divisor
-            MAR_matrix[n][i] = 1 * (MAR_matrix[n][i] < result)
+            mask[n][i] = 1 * (mask[n][i] < result)
 
-    MAR_matrix = 1 - MAR_matrix
+    mask = 1 - mask
+    miss = data.copy()
+    miss[mask == 0] = np.nan
 
-    return MAR_matrix
+    return miss, mask
 
 
-def MAR3(data_x, prob, rows, cols, seed=None):
+def MAR3(data, prob, seed=None):
     """Sample variables distributed Missing at Random (MAR).
 
     This method uses the formula from the supplementary materials of:
@@ -106,19 +111,21 @@ def MAR3(data_x, prob, rows, cols, seed=None):
     2018. https://proceedings.mlr.press/v80/yoon18a/yoon18a.pdf.
     And was implemented by: Adam Bosch, Roman Ladus, and Vlad Negara.
 
-    :param data_x: the original dataset.
-    :param prob: the probability of the missing values.
-    :param rows: the number of rows (entries).
-    :param cols: the number of columns (features).
-    :param seed: the random seed.
+    Args:
+        data: the original dataset.
+        prob: the probability of the missing values.
+        seed: the random seed.
 
-    :return:
-    - miss_data_x: the data with missing values distributed MAR.
-    - data_mask: the indicator matrix for missing values distributed MAR.
+    Returns:
+        miss: the data with missing values distributed MAR.
+        mask: the indicator matrix for missing values.
     """
 
     # Fix the seed for run-to-run consistency
     if seed: np.random.seed(seed)
+
+    # Get the shape
+    rows, cols = data.shape
 
     # Uniform p_m
     p_m = np.full((cols,), prob)
@@ -139,13 +146,13 @@ def MAR3(data_x, prob, rows, cols, seed=None):
     b = np.random.uniform(0., 1., size=cols)
 
     # Initialize the mask and the data with missingness
-    data_mask = np.ones(shape=(rows, cols))
-    miss_data_x = data_x.copy()
+    mask = np.ones(shape=(rows, cols))
+    miss = data.copy()
 
     # Normalize data using min-max scaling
-    data_x_min = data_x.min(axis=0)
-    data_x_max = data_x.max(axis=0)
-    data_x_normalized = (data_x.copy() - data_x_min) / (data_x_max - data_x_min)
+    data_x_min = data.min(axis=0)
+    data_x_max = data.max(axis=0)
+    data_x_normalized = (data.copy() - data_x_min) / (data_x_max - data_x_min)
 
     # Iterate over the features, then the rows
     for i in range(cols):
@@ -163,8 +170,8 @@ def MAR3(data_x, prob, rows, cols, seed=None):
             uniform_random_value = np.random.uniform()
             if uniform_random_value < P:
                 # The value is missing
-                data_mask[n][i] = 0
-                miss_data_x[n][i] = np.nan
+                mask[n][i] = 0
+                miss[n][i] = np.nan
 
                 # Add the bias of this feature to the memorized numerator exponent for the next feature
                 exponent_terms[n][i + 1] = exponent_terms[n][i] + b[i]
@@ -175,10 +182,10 @@ def MAR3(data_x, prob, rows, cols, seed=None):
             # Add the numerator exponent for the next feature to its memorized denominator
             denominators[i + 1] += np.exp(-exponent_terms[n][i + 1])
 
-    return miss_data_x, data_mask
+    return miss, mask
 
 
-def MNAR1(X_data, prob, rows, cols, seed=None):
+def MNAR1(data, prob, seed=None):
     """Sample variables distributed Missing not at Random (MNAR).
 
     This method uses the formula from the supplementary materials of:
@@ -186,32 +193,39 @@ def MNAR1(X_data, prob, rows, cols, seed=None):
     2018. https://proceedings.mlr.press/v80/yoon18a/yoon18a.pdf
     And was implemented by: Lars van Soest, Rune Ebbers, and Ryan Bartelds.
 
-    :param X_data: the original dataset.
-    :param prob: the probability of the missing values.
-    :param rows: the number of rows (entries).
-    :param cols: the number of columns (features).
-    :param seed: the random seed.
+    Args:
+        data: the original dataset.
+        prob: the probability of the missing values.
+        seed: the random seed.
 
-    :return: a MAR distributed matrix.
+    Returns:
+        miss: the data with missing values distributed MNAR.
+        mask: the indicator matrix for missing values.
     """
 
     # Fix the seed for run-to-run consistency
     if seed: np.random.seed(seed)
 
+    # Get the shape
+    rows, cols = data.shape
+
     # Initialize W (weight) and b (bias) matrix for every j (the first value is W, the second is b) and the MNAR matrix
     W_array = np.random.uniform(0., 1., size=(cols,))
-    MNAR_matrix = np.random.uniform(0., 1., size=(rows, cols))
+    mask = np.random.uniform(0., 1., size=(rows, cols))
 
     # Calculate the MNAR matrix
-    numerators = np.exp(-W_array[:, None] * X_data.T)
+    numerators = np.exp(-W_array[:, None] * data.T)
     denominators = np.sum(numerators, axis=1)
     numerators = prob * rows * numerators
-    MNAR_matrix = 1 * (MNAR_matrix >= (numerators.T / denominators))
+    mask = 1 * (mask >= (numerators.T / denominators))
 
-    return MNAR_matrix
+    miss = data.copy()
+    miss[mask == 0] = np.nan
+
+    return miss, mask
 
 
-def MNAR3(data_x, prob, rows, cols, seed=None):
+def MNAR3(data, prob, seed=None):
     """Sample variables distributed Missing not at Random (MNAR).
 
     This method uses the formula from the supplementary materials of:
@@ -219,19 +233,21 @@ def MNAR3(data_x, prob, rows, cols, seed=None):
     2018. https://proceedings.mlr.press/v80/yoon18a/yoon18a.pdf
     And was implemented by: Adam Bosch, Roman Ladus, and Vlad Negara.
 
-    :param data_x: the original dataset.
-    :param prob: the probability of the missing values.
-    :param rows: the number of rows (entries).
-    :param cols: the number of columns (features).
-    :param seed: the random seed.
+     Args:
+        data: the original dataset.
+        prob: the probability of the missing values.
+        seed: the random seed.
 
-    :return:
-    - miss_data_x: the data with missing values distributed MAR.
-    - data_mask: the indicator matrix for missing values distributed MAR.
+    Returns:
+        miss: the data with missing values distributed MNAR.
+        mask: the indicator matrix for missing values.
     """
 
     # Fix the seed for run-to-run consistency
     if seed: np.random.seed(seed)
+
+    # Get the shape
+    rows, cols = data.shape
 
     # Uniform p_m
     p_m = np.full((cols,), prob)
@@ -240,9 +256,9 @@ def MNAR3(data_x, prob, rows, cols, seed=None):
     w = np.random.uniform(0., 1., size=cols)
 
     # Normalize data using min-max scaling
-    data_x_min = data_x.min(axis=0)
-    data_x_max = data_x.max(axis=0)
-    data_x_normalized = (data_x.copy() - data_x_min) / (data_x_max - data_x_min)
+    data_x_min = data.min(axis=0)
+    data_x_max = data.max(axis=0)
+    data_x_normalized = (data.copy() - data_x_min) / (data_x_max - data_x_min)
 
     # Array to memoize the denominator in the formula
     denominators = np.zeros(shape=(cols,))
@@ -252,7 +268,7 @@ def MNAR3(data_x, prob, rows, cols, seed=None):
 
     # Initialize the mask and the data with missingness
     data_mask = np.ones(shape=(rows, cols))
-    miss_data_x = data_x.copy()
+    miss_data_x = data.copy()
 
     # Iterate over the features, then the rows
     for i in range(cols):

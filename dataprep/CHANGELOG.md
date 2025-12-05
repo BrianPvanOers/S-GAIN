@@ -1,6 +1,6 @@
 # Changelog of the dataprep package
 
-The dataprep package was introduced in S-GAIN pre-release v0.1.4-alpha. It has a separate distributions.py file
+The dataprep package was introduced in S-GAIN pre-release v0.1.4-beta. It has a separate distributions.py file
 containing all distributions in J. Yoon, J. Jordon, M. van der Schaar, "GAIN: Missing Data Imputation using Generative
 Adversarial Nets", ICML, 2018. https://proceedings.mlr.press/v80/yoon18a/yoon18a.pdf. However, the dataloader was
 introduced as a utility package in S-GAIN pre-release v0.1.0-alpha and was part of the original GAIN code.
@@ -11,8 +11,8 @@ https://github.com/jsyoon0823/GAIN.
 This version vastly improves on the previous dataloader.
 
 - Now contains all missing value distributions proposed in the GAIN paper.
-- Added an option to include labels in the dataset. This is for testing the viability of imputation methods as
-  predictive models (classifiers/regressors).
+- Include the header and the target(s) alongside the dataset. This enables us to test predictive models and/or test the
+  viability of imputation methods as classifiers and regressors.
 - Import UCI datasets directly from the repository.
 - Added an option for storing the downloaded datasets for offline access.
 - Distributions are now independent of utils.utils.
